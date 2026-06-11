@@ -25,11 +25,11 @@ st.write("Welkom bij het officiële klachtenformulier. Vul de velden zo nauwkeur
 
 st.markdown("---")
 
-# 4. Het Formulier
+# 4. Het Formulier (Aangesloten op jouw Supabase kolommen)
 st.subheader("👤 Gegevens van de Melder")
 volledige_naam = st.text_input("Volledige Naam", placeholder="Voor- en achternaam")
 id_nummer = st.text_input("ID-Nummer", placeholder="Bijv. FI000000M")
-adres = st.text_input("Adres / Woonomgeving", placeholder="Straatnaam en district/ressort")
+adres = st.text_input("Adres / Woonomgeving", placeholder="Straatnaam en ressort")
 telefoon_whatsapp = st.text_input("Telefoon- / WhatsApp-nummer", placeholder="Bijv. +597 8xxxxxx")
 
 st.markdown("---")
@@ -61,22 +61,20 @@ if st.button("Klacht Officieel Indienen", type="primary"):
             try:
                 bijlage_url = None
 
-                # Stap A: Als er een bijlage is, upload deze naar Supabase Storage
+                # Koppel de foto aan Supabase Storage als die er is
                 if bijlage is not None:
                     file_bytes = bijlage.read()
                     bestandsnaam = f"klacht_{int(time.time())}_{bijlage.name}"
                     
-                    # Upload naar de bucket 'klachten-bijlagen'
                     storage_res = supabase.storage.from_("klachten-bijlagen").upload(
                         path=bestandsnaam,
                         file=file_bytes,
                         file_options={"content-type": bijlage.type}
                     )
-                    
-                    # Haal de publieke link op
                     bijlage_url = supabase.storage.from_("klachten-bijlagen").get_public_url(bestandsnaam)
 
-                # Stap B: Sla alle gegevens op in de database tabel 'klachten'
+                # Sla op in de tabel 'klachten' met de juiste kolommen!
+                # De .execute() aan het einde lost de 'dict' error op.
                 supabase.table("klachten").insert({
                     "volledige_naam": volledige_naam,
                     "id_nummer": id_nummer,
@@ -87,7 +85,7 @@ if st.button("Klacht Officieel Indienen", type="primary"):
                     "bijlage_url": bijlage_url
                 }).execute()
 
-                # Stap C: Succes!
+                # Succes!
                 st.success("🎉 Uw klacht is succesvol ontvangen en geregistreerd bij het Commissariaat!")
                 st.balloons()
 
