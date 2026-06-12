@@ -9,6 +9,21 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
+# --- STYLING (Blauwe Balken) ---
+st.markdown("""
+    <style>
+    /* Achtergrondkleur van de zijbalk naar blauw */
+    [data-testid="stSidebar"] {
+        background-color: #004a99; 
+    }
+    /* Tekst in zijbalk wit maken */
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    .main-title { color: #004a99; text-align: center; }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- FUNCTIES ---
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -19,7 +34,7 @@ def check_login(username, password):
         response = supabase.table("gebruikers").select("*").eq("username", username).eq("password_hash", pw_hash).execute()
         if response.data:
             return response.data[0]
-    except Exception as e:
+    except Exception:
         return None
     return None
 
@@ -34,8 +49,6 @@ def toon_admin_gebruikers_beheer():
             supabase.table("gebruikers").insert({"username": new_user, "password_hash": pw_hash, "role": new_role}).execute()
             st.success("Gebruiker toegevoegd!")
             st.rerun()
-    
-    st.write("### Huidige Gebruikers")
     users = supabase.table("gebruikers").select("id, username, role").execute()
     st.table(users.data)
 
@@ -43,11 +56,9 @@ def toon_medewerker_paneel():
     st.subheader("📋 Klachten Overzicht")
     response = supabase.table("klachten").select("*").execute()
     klachten = response.data
-    
     if not klachten:
         st.info("Geen klachten gevonden.")
         return
-
     for k in klachten:
         with st.expander(f"Klacht van: {k['volledige_naam']} | Status: {k.get('status', 'Nieuw')}"):
             st.write(f"**Omschrijving:** {k['omschrijving']}")
@@ -63,7 +74,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_data = None
 
-# Sidebar voor inloggen
+# Sidebar
 with st.sidebar:
     if not st.session_state.logged_in:
         st.markdown("### 🔐 Medewerker Login")
@@ -95,11 +106,10 @@ if st.session_state.logged_in:
     else:
         toon_medewerker_paneel()
 else:
-    st.title("Welkom bij de Klachten Unit Wanica Centrum")
-    st.write("Dien hieronder je klacht in:")
+    st.markdown("<h1 class='main-title'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
     with st.form("klacht_form"):
         naam = st.text_input("Volledige naam")
-        omschrijving = st.text_area("Omschrijving klacht")
+        omschrijving = st.text_area("Omschrijving van je klacht")
         if st.form_submit_button("Verstuur klacht"):
             if naam and omschrijving:
                 supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
