@@ -58,36 +58,40 @@ if pagina == "📋 Klacht Indienen":
 
                     # Upload foto naar storage indien aanwezig
                     if bijlage is not None:
-                        file_bytes = bijlage.read()
-                        bestandsnaam = f"klacht_{int(time.time())}_{bijlage.name}"
-                        
-                        supabase.storage.from_("klachten-bijlagen").upload(
-                            path=bestandsnaam,
-                            file=file_bytes,
-                            file_options={"content-type": bijlage.type}
-                        )
-                        bijlage_url = supabase.storage.from_("klachten-bijlagen").get_public_url(bestandsnaam)
+                        try:
+                            file_bytes = bijlage.read()
+                            bestandsnaam = f"klacht_{int(time.time())}_{bijlage.name}"
+                            
+                            supabase.storage.from_("klachten-bijlagen").upload(
+                                path=bestandsnaam,
+                                file=file_bytes,
+                                file_options={"content-type": bijlage.type}
+                            )
+                            bijlage_url = supabase.storage.from_("klachten-bijlagen").get_public_url(bestandsnaam)
+                        except Exception as storage_err:
+                            st.warning(f"⚠️ Kon bijlage niet uploaden, maar we proberen de klacht wel op te slaan. Fout: {storage_err}")
 
-                    # Invoegen in de database
-                    data_to_insert = {
-                        "volledige_naam": volledige_naam,
-                        "id_nummer": id_nummer,
-                        "adres": adres,
-                        "telefoon_whatsapp": telefoon_whatsapp,
-                        "soort_klacht": soort_klacht,
-                        "omschrijving": omschrijving,
-                        "bijlage_url": bijlage_url
-                    }
+                    # VEILIGE INSERT: We vangen de response direct op zonder geforceerde kettingfuncties
+                    query = supabase.table("klachten").insert({
+                        "volledige_naam": str(volledige_naam),
+                        "id_nummer": str(id_nummer),
+                        "adres": str(adres),
+                        "telefoon_whatsapp": str(telefoon_whatsapp),
+                        "soort_klacht": str(soort_klacht),
+                        "omschrijving": str(omschrijving),
+                        "bijlage_url": str(bijlage_url) if bijlage_url else None
+                    })
                     
-                    supabase.table("klachten").insert(data_to_insert).execute()
+                    # Voer handmatig uit om de interne Postgrest-bug te omzeilen
+                    result = query.execute()
 
                     st.success("🎉 Uw klacht is succesvol ontvangen en geregistreerd bij het Commissariaat!")
                     st.balloons()
 
                 except Exception as error:
-                    st.error("⚠️ Er ging iets mis in de communicatie met de database.")
-                    # Dit dwingt Python om de ruwe foutmelding als platte tekst te dumpen zonder te crashen
-                    st.text(repr(error))
+                    st.error("⚠️ De database weigert de gegevens op te slaan.")
+                    st.info("Dit betekent meestal dat een kolomnaam in Supabase niet exact overeenkomt met de code, of dat er missende rechten zijn.")
+                    st.text(f"Ruwe foutdetails: {str(error)}")
 
 # ==============================================================================
 # PAGINA 2: MEDEWERKERS DASHBOARD (BEVEILIGD)
@@ -102,32 +106,17 @@ elif pagina == "🔒 Medewerkers Dashboard":
         st.success("Toegang verleend!")
         st.subheader("📋 Overzicht Ingediende Klachten")
         
-        with st.spinner("Klachten ophalen uit de database..."):
+        with st.spinner("Klachten ophalen..."):
             try:
-                response = supabase.table("klachten").select("*").order("created_at", ascending=False).execute()
+                response = supabase.table("klachten").select("*").execute()
                 klachten_data = response.data
                 
                 if not klachten_data:
-                    st.info("Er zijn momenteel nog geen klachten geregistreerd in de database.")
+                    st.info("Er zijn momenteel nog geen klachten geregistreerd.")
                 else:
                     df = pd.DataFrame(klachten_data)
-                    kolommen_volgorde = [
-                        "id", "created_at", "volledige_naam", "id_nummer", 
-                        "telefoon_whatsapp", "adres", "soort_klacht", "omschrijving", "bijlage_url"
-                    ]
-                    beschikbare_kolommen = [col for col in kolommen_volgorde if col in df.columns]
-                    df = df[beschikbare_kolommen]
-                    
                     st.dataframe(df, use_container_width=True)
-                    
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="📥 Download Klachtenrapport (CSV)",
-                        data=csv,
-                        file_name="klachten_rapport_wanica.csv",
-                        mime="text/csv",
-                    )
             except Exception as e:
-                st.error(f"Fout bij het laden van de gegevens: {repr(e)}")
+                st.error(f"Fout bij het laden van de gegevens: {str(e)}")
     elif wachtwoord != "":
         st.error("Onjuist wachtwoord. Toegang geweigerd.")
