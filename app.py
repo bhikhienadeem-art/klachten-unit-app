@@ -7,35 +7,28 @@ st.set_page_config(page_title="Klachten Unit", layout="wide")
 def set_custom_style():
     st.markdown("""
         <style>
+        /* Blauwe Header Banner */
         .header-banner { 
-            background-color: #1e40af; 
-            color: white; 
-            padding: 20px; 
-            border-radius: 10px; 
-            margin-bottom: 25px; 
-            text-align: center; 
+            background-color: #1e40af; color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center; 
         }
         .contact-grid {
-            display: flex; 
-            justify-content: space-around; 
-            padding-top: 15px; 
-            font-size: 0.9em;
-            flex-wrap: wrap;
+            display: flex; justify-content: space-around; padding-top: 15px; font-size: 0.9em; flex-wrap: wrap;
         }
         /* Blauwe Zijbalk */
-        [data-testid="stSidebar"] { 
-            background-color: #1e40af !important; 
-        }
-        [data-testid="stSidebar"] * { 
-            color: #ffffff !important; 
-        }
-        /* Zichtbare Inlogknop */
+        [data-testid="stSidebar"] { background-color: #1e40af !important; }
+        [data-testid="stSidebar"] * { color: #ffffff !important; }
+        
+        /* Duidelijke Inlogknop (Wit met blauwe tekst) */
         div.stFormSubmitButton > button {
             background-color: #ffffff !important;
             color: #1e40af !important;
-            font-weight: bold;
-            width: 100%;
+            font-weight: bold !important;
+            width: 100% !important;
+            border: none !important;
+            padding: 10px !important;
+            border-radius: 5px !important;
         }
+        
         .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
         h3 { color: #1e293b; margin-top: 0 !important; }
         </style>
@@ -47,13 +40,15 @@ set_custom_style()
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# 4. Sidebar
+# 4. Sidebar met inlogformulier
 with st.sidebar:
     if not st.session_state.logged_in:
         st.markdown("### 🔐 Medewerker Login")
         with st.form("login_form"):
             user = st.text_input("Gebruikersnaam")
             pw = st.text_input("Wachtwoord", type="password")
+            
+            # De submit button activeert automatisch bij 'Enter'
             if st.form_submit_button("Inloggen"):
                 if user == "admin" and pw == "geheim":
                     st.session_state.logged_in = True
