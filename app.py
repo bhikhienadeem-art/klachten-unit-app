@@ -7,7 +7,7 @@ SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "sb_publishable_XnTLlOfaR0bfZ_gFXlOnuw_zxOi87kb"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-st.set_page_config(page_title="Klachten Unit", layout="wide")
+st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
 # --- FUNCTIES ---
 def hash_password(password):
@@ -20,7 +20,7 @@ def check_login(username, password):
         if response.data:
             return response.data[0]
     except Exception as e:
-        st.error(f"Fout bij inloggen: {e}")
+        st.error(f"Fout: {e}")
     return None
 
 def toon_admin_gebruikers_beheer():
@@ -34,7 +34,6 @@ def toon_admin_gebruikers_beheer():
             supabase.table("gebruikers").insert({"username": new_user, "password_hash": pw_hash, "role": new_role}).execute()
             st.success("Gebruiker toegevoegd!")
             st.rerun()
-
     users = supabase.table("gebruikers").select("id, username, role").execute()
     st.table(users.data)
 
@@ -50,11 +49,12 @@ def toon_medewerker_paneel():
                 supabase.table("klachten").update({"status": new_status, "reactie_medewerker": reactie}).eq("id", k['id']).execute()
                 st.rerun()
 
-# --- SESSY & UI ---
+# --- APP LOGICA ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_data = None
 
+# Sidebar voor inloggen
 with st.sidebar:
     if not st.session_state.logged_in:
         st.markdown("### 🔐 Medewerker Login")
@@ -69,12 +69,12 @@ with st.sidebar:
             else:
                 st.error("Onjuiste gegevens")
     else:
-        st.write(f"Welkom, {st.session_state.user_data['username']}")
+        st.write(f"Ingelogd als: {st.session_state.user_data['username']}")
         if st.button("Log uit"):
             st.session_state.logged_in = False
-            st.session_state.user_data = None
             st.rerun()
 
+# Hoofdscherm
 if st.session_state.logged_in:
     rol = st.session_state.user_data['role']
     if rol == "admin":
@@ -85,4 +85,10 @@ if st.session_state.logged_in:
         toon_medewerker_paneel()
 else:
     st.title("Welkom bij de Klachten Unit Wanica Centrum")
-    st.write("Log in via het menu links.")
+    st.write("Dien hieronder je klacht in:")
+    with st.form("klacht_form"):
+        naam = st.text_input("Volledige naam")
+        omschrijving = st.text_area("Omschrijving klacht")
+        if st.form_submit_button("Verstuur klacht"):
+            supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
+            st.success("Klacht verstuurd!")
