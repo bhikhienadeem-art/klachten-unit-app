@@ -77,7 +77,7 @@ else:
     # Publieke pagina - Blauwe header met contact info
     st.markdown('''
         <div class="header-banner">
-            <h1>Welkom bij de Klachten Unit</h1>
+            <h1>Welkom bij de Klachten Unit Wanica Centrum</h1>
             <p>Dien hieronder uw klacht in. Medewerkers kunnen inloggen via de zijbalk.</p>
             <div class="contact-grid">
                 <div>📍 <b>Adres:</b><br>Tawajarieweg no. 20</div>
