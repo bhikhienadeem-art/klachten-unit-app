@@ -75,7 +75,15 @@ if page == "📝 Klacht Indienen":
                         bijlagen_urls.append(pure_url)
                         
                     except Exception as upload_err:
-                        st.error(f"Fout bij uploaden van {file.name}: {str(upload_err)}")
+                        # Veilige extractie van de foutmelding (voorkomt de 'dict' Has No Attribute 'text' crash)
+                        if hasattr(upload_err, "message"):
+                            fout_boodschap = upload_err.message
+                        elif isinstance(upload_err, dict) and "message" in upload_err:
+                            fout_boodschap = upload_err["message"]
+                        else:
+                            fout_boodschap = str(upload_err)
+                            
+                        st.error(f"Fout bij uploaden van {file.name}: {fout_boodschap}")
                         upload_succesvol = False
                         break
             
