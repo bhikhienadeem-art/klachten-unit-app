@@ -1,15 +1,21 @@
 import streamlit as st
 import uuid
-from supabase import create_client, Client
+import requests  # Gebruiken we als stabiele fallback voor de upload
 
 # --- 1. SUPABASE INITIALISATIE ---
-@st.cache_resource
-def init_supabase() -> Client:
-    url: str = st.secrets["SUPABASE_URL"]
-    key: str = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
+if "SUPABASE_URL" in st.secrets and "SUPABASE_KEY" in st.secrets:
+    supabase_url = st.secrets["SUPABASE_URL"].rstrip('/')
+    supabase_key = st.secrets["SUPABASE_KEY"]
+else:
+    st.error("Supabase configuratie ontbreekt in secrets!")
+    st.stop()
 
-supabase = init_supabase()
+# Probeer de library te initialiseren
+try:
+    from supabase import create_client, Client
+    supabase: Client = create_client(supabase_url, supabase_key)
+except Exception as e:
+    st.error(f"Fout bij laden van Supabase client: {e}")
 
 # --- 2. PAGINA-INDELING & NAVIGATIE ---
 st.set_page_config(page_title="Klachten Unit - Commissariaat Wanica Centrum", page_icon="📝", layout="centered")
@@ -56,34 +62,32 @@ if page == "📝 Klacht Indienen":
                     ext = file.name.split(".")[-1]
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
+                    # Directe HTTP Upload (Vrijwaart ons van SDK fouten/bugs)
+                    upload_url = f"{supabase_url}/storage/v1/object/klachten-bijlagen/{unieke_bestandsnaam}"
+                    headers = {
+                        "Authorization": f"Bearer {supabase_key}",
+                        "apikey": supabase_key,
+                        "Content-Type": file.type
+                    }
+                    
                     try:
-                        file_bytes = file.getvalue()
+                        res = requests.post(upload_url, headers=headers, data=file.getvalue())
                         
-                        # Upload uitvoeren
-                        res = supabase.storage.from_('klachten-bijlagen').upload(
-                            path=unieke_bestandsnaam,
-                            file=file_bytes,
-                            file_options={"content-type": file.type}
-                        )
-                        
-                        # Controleer of de response zelf een fout bevat (oudere SDK fallback)
-                        if isinstance(res, dict) and "error" in res and res["error"]:
-                            st.error(f"Supabase Storage Fout: {res['error']}")
+                        if res.status_code == 200:
+                            # Upload geslaagd! Publieke link opslaan
+                            pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
+                            bijlagen_urls.append(pure_url)
+                        else:
+                            # Geef de exacte server-fout terug (bijv. 403 Forbidden = Rechten kwestie)
+                            st.error(f"Fout bij uploaden van {file.name}. Server antwoordde met status {res.status_code}: {res.text}")
                             upload_succesvol = False
                             break
-                        
-                        # Publieke URL opbouwen
-                        supabase_url = st.secrets["SUPABASE_URL"].rstrip('/')
-                        pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
-                        bijlagen_urls.append(pure_url)
-                        
-                    except Exception as upload_error:
-                        # Haal de echte foutboodschap op zonder te crashen op '.text'
-                        error_msg = getattr(upload_error, "message", repr(upload_error))
-                        st.error(f"Fout bij het uploaden van {file.name}: {error_msg}")
+                    except Exception as http_err:
+                        st.error(f"Netwerkfout tijdens upload van {file.name}: {str(http_err)}")
                         upload_succesvol = False
+                        break
             
-            # Alleen opslaan als de bijlagen succesvol zijn geüpload
+            # Data invoeren in de database
             if upload_succesvol:
                 klacht_data = {
                     "volledige_naam": volledige_naam,
@@ -103,7 +107,7 @@ if page == "📝 Klacht Indienen":
                     if response.data:
                         st.success("🎉 Uw klacht is succesvol ontvangen en opgeslagen!")
                     else:
-                        st.error("Er ging iets mis bij het opslaan van de gegevens.")
+                        st.error("Er ging iets mis bij het opslaan in de database.")
                 except Exception as db_error:
                     st.error(f"Database fout: {str(db_error)}")
         else:
@@ -111,4 +115,4 @@ if page == "📝 Klacht Indienen":
 
 elif page == "🔒 Medewerkers Dashboard":
     st.title("🔒 Medewerkers Dashboard")
-    st.info("Dit gedeelte is klaar om in de volgende stap ingericht te worden.")
+    st.info("Dit gedeelte is klaar om ingericht te worden.")
