@@ -51,7 +51,7 @@ if page == "📝 Klacht Indienen":
     
     st.markdown("---")
     
-   # --- 3. VERWERKINGS LOGICA ---
+    # --- 3. VERWERKINGS LOGICA ---
     if st.button("Klacht Officieel Indienen", type="primary"):
         if volledige_naam.strip() and telefoon.strip() and omschrijving.strip():
             
@@ -63,7 +63,7 @@ if page == "📝 Klacht Indienen":
                     ext = file.name.split(".")[-1]
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
-                    # Juiste URL-structuur voor een nieuwe Storage POST upload via de REST API
+                    # CORRECTIE: '/object/' is toegevoegd tussen /v1/ en de bucketnaam
                     upload_url = f"{supabase_url}/storage/v1/object/klachten-bijlagen/{unieke_bestandsnaam}"
                     headers = {
                         "Authorization": f"Bearer {supabase_key}",
@@ -72,11 +72,11 @@ if page == "📝 Klacht Indienen":
                     }
                     
                     try:
-                        # Supabase Storage vereist een POST voor gloednieuwe bestanden
+                        # Nieuw bestand vereist een HTTP POST naar het object endpoint
                         res = requests.post(upload_url, headers=headers, data=file.getvalue())
                         
                         if res.status_code == 200:
-                            # Upload geslaagd! Publieke link opslaan
+                            # Upload geslaagd! Publieke link genereren
                             pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
                             bijlagen_urls.append(pure_url)
                         else:
@@ -113,3 +113,7 @@ if page == "📝 Klacht Indienen":
                     st.error(f"Database fout: {str(db_error)}")
         else:
             st.warning("Vul alstublieft de verplichte velden in: Naam, Telefoonnummer en Omschrijving.")
+
+elif page == "🔒 Medewerkers Dashboard":
+    st.title("🔒 Medewerkers Dashboard")
+    st.info("Dit gedeelte is klaar om ingericht te worden.")
