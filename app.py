@@ -60,13 +60,15 @@ else:
     # Publieke pagina
     st.markdown('<div class="header-banner"><h1>Welkom bij de Klachten Unit</h1></div>', unsafe_allow_html=True)
     
-    # Contactgegevens
-    col_c1, col_c2, col_c3 = st.columns(3)
+   # Contactgegevens met aparte kolommen
+    col_c1, col_c2, col_c3, col_c4 = st.columns(4)
     with col_c1:
         st.markdown("**📍 Adres:**<br>Tawajarieweg no. 20", unsafe_allow_html=True)
     with col_c2:
         st.markdown("**📞 Telefoon:**<br>+597-366660 / +597-366929", unsafe_allow_html=True)
     with col_c3:
+        st.markdown("**💬 WhatsApp:**<br>+597-8706661", unsafe_allow_html=True)
+    with col_c4:
         st.markdown("**✉️ E-mail:**<br>klachtenunitwanicacentrum@gmail.com", unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
