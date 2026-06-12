@@ -10,7 +10,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Pagina instellingen
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- STYLING ---
+# --- STYLING (Herstelt je blauwe balk en layout) ---
 st.markdown("""
     <style>
     /* Blauwe zijbalk */
@@ -40,12 +40,12 @@ def check_login(username, password):
     except: return None
     return None
 
-# --- STATE ---
+# --- STATE MANAGEMENT ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_data = None
 
-# --- ZIJKANT (SIDEBAR) ---
+# --- ZIJKANT (SIDEBAR LOGIN) ---
 with st.sidebar:
     st.markdown("### 🔐 Medewerker Login")
     if not st.session_state.logged_in:
@@ -68,12 +68,12 @@ with st.sidebar:
 
 # --- HOOFDPROGRAMMA ---
 if st.session_state.logged_in:
-    # Hier komt je Medewerkers/Admin dashboard
+    # Hier ziet de ingelogde medewerker het dashboard
     st.title("Dashboard")
-    st.write("Welkom in het beheersysteem.")
-    # Voeg hier je functies voor klachtenoverzicht toe
+    st.write("Welkom in het beheersysteem. Je kunt nu klachten beheren.")
+    # (Hier kun je later je functies voor klachtenoverzicht weer toevoegen)
 else:
-    # Hier staat je originele publieke formulier precies zoals je het wilde
+    # HET ORIGINELE FORMULIER (Direct zichtbaar bij opstarten)
     st.markdown("<h1 class='title-style'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
     st.write("Dien hieronder je klacht in:")
     
