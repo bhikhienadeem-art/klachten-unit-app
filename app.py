@@ -96,11 +96,11 @@ else:
                 st.text_input("Volledige Naam")
                 st.text_input("ID-Nummer")
             with c2:
-                st.text_input("Telefoonnummer")
+                st.text_input("Telefoonnummer/Whatsappnummer")
                 st.text_input("E-mailadres")
             
-            st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening", "Overig"])
-            st.text_area("Omschrijving")
+            st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening","Milieu en Gezondheid" "Overig"])
+            st.text_area("Omschrijving/Eventuele oplossing")
             st.file_uploader("Documenten of Foto's uploaden", accept_multiple_files=True)
             
             if st.form_submit_button("Verstuur Klacht"):
