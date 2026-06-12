@@ -3,13 +3,33 @@ import streamlit as st
 # 1. Pagina configuratie
 st.set_page_config(page_title="Klachten Unit", layout="wide")
 
-# 2. Custom CSS voor header en sidebar
+# 2. Custom CSS
 def set_custom_style():
     st.markdown("""
         <style>
-        .header-banner { background-color: #1e40af; color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center; }
-        [data-testid="stSidebar"] { background-color: #0f172a; }
-        [data-testid="stSidebar"] * { color: #ffffff; }
+        /* Blauwe Header Banner met contactgegevens */
+        .header-banner { 
+            background-color: #1e40af; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 25px; 
+            text-align: center; 
+        }
+        .contact-grid {
+            display: flex; 
+            justify-content: space-around; 
+            padding-top: 15px; 
+            font-size: 0.9em;
+            flex-wrap: wrap;
+        }
+        /* Blauwe Zijbalk */
+        [data-testid="stSidebar"] { 
+            background-color: #1e40af !important; 
+        }
+        [data-testid="stSidebar"] * { 
+            color: #ffffff !important; 
+        }
         .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
         h3 { color: #1e293b; margin-top: 0 !important; }
         </style>
@@ -54,23 +74,20 @@ if st.session_state.logged_in:
         st.title("Klacht Indienen")
         st.write("Formulier voor medewerkers.")
 else:
-    # Publieke pagina - SCHONE LAYOUT
-    st.markdown('<div class="header-banner"><h1>Welkom bij de Klachten Unit</h1></div>', unsafe_allow_html=True)
+    # Publieke pagina - Blauwe header met contact info
+    st.markdown('''
+        <div class="header-banner">
+            <h1>Welkom bij de Klachten Unit</h1>
+            <p>Dien hieronder uw klacht in. Medewerkers kunnen inloggen via de zijbalk.</p>
+            <div class="contact-grid">
+                <div>📍 <b>Adres:</b><br>Tawajarieweg no. 20</div>
+                <div>📞 <b>Telefoon:</b><br>+597-366660 / +597-366929</div>
+                <div>💬 <b>WhatsApp:</b><br>+597-8921062</div>
+                <div>✉️ <b>E-mail:</b><br>klachtenunitwanicacentrum@gmail.com</div>
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
     
-    # Contactgegevens
-    col_c1, col_c2, col_c3, col_c4 = st.columns(4)
-    with col_c1:
-        st.markdown("**📍 Adres:**<br>Tawajarieweg no. 20", unsafe_allow_html=True)
-    with col_c2:
-        st.markdown("**📞 Telefoon:**<br>+597-366660 / +597-366929", unsafe_allow_html=True)
-    with col_c3:
-        st.markdown("**💬 WhatsApp:**<br>+597-8921062", unsafe_allow_html=True)
-    with col_c4:
-        st.markdown("**✉️ E-mail:**<br>klachtenunitwanicacentrum@gmail.com", unsafe_allow_html=True)
-    
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    
-    # Formulier met ingebouwde border (geen lege balken meer)
     st.header("Klacht Indienen")
     with st.container(border=True):
         with st.form("burger_form", clear_on_submit=True):
