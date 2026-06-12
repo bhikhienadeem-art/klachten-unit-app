@@ -20,7 +20,7 @@ def check_login(username, password):
         if response.data:
             return response.data[0]
     except Exception as e:
-        st.error(f"Fout: {e}")
+        return None
     return None
 
 def toon_admin_gebruikers_beheer():
@@ -34,19 +34,28 @@ def toon_admin_gebruikers_beheer():
             supabase.table("gebruikers").insert({"username": new_user, "password_hash": pw_hash, "role": new_role}).execute()
             st.success("Gebruiker toegevoegd!")
             st.rerun()
+    
+    st.write("### Huidige Gebruikers")
     users = supabase.table("gebruikers").select("id, username, role").execute()
     st.table(users.data)
 
 def toon_medewerker_paneel():
     st.subheader("📋 Klachten Overzicht")
-    klachten = supabase.table("klachten").select("*").execute()
-    for k in klachten.data:
-        with st.expander(f"Klacht van: {k['volledige_naam']} - Status: {k['status']}"):
+    response = supabase.table("klachten").select("*").execute()
+    klachten = response.data
+    
+    if not klachten:
+        st.info("Geen klachten gevonden.")
+        return
+
+    for k in klachten:
+        with st.expander(f"Klacht van: {k['volledige_naam']} | Status: {k.get('status', 'Nieuw')}"):
             st.write(f"**Omschrijving:** {k['omschrijving']}")
             new_status = st.selectbox("Status wijzigen", ["Nieuw", "In Behandeling", "Afgehandeld"], key=f"s_{k['id']}")
             reactie = st.text_area("Reactie", value=k.get('reactie_medewerker', ''), key=f"r_{k['id']}")
             if st.button("Opslaan", key=f"b_{k['id']}"):
                 supabase.table("klachten").update({"status": new_status, "reactie_medewerker": reactie}).eq("id", k['id']).execute()
+                st.success("Opgeslagen!")
                 st.rerun()
 
 # --- APP LOGICA ---
@@ -72,11 +81,13 @@ with st.sidebar:
         st.write(f"Ingelogd als: {st.session_state.user_data['username']}")
         if st.button("Log uit"):
             st.session_state.logged_in = False
+            st.session_state.user_data = None
             st.rerun()
 
 # Hoofdscherm
 if st.session_state.logged_in:
     rol = st.session_state.user_data['role']
+    st.title(f"Dashboard - {rol.capitalize()}")
     if rol == "admin":
         menu = st.sidebar.radio("Beheer", ["Klachten", "Gebruikers"])
         if menu == "Klachten": toon_medewerker_paneel()
@@ -90,5 +101,8 @@ else:
         naam = st.text_input("Volledige naam")
         omschrijving = st.text_area("Omschrijving klacht")
         if st.form_submit_button("Verstuur klacht"):
-            supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
-            st.success("Klacht verstuurd!")
+            if naam and omschrijving:
+                supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
+                st.success("Klacht verstuurd!")
+            else:
+                st.error("Vul alle velden in.")
