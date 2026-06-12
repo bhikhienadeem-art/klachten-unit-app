@@ -1,5 +1,6 @@
 import streamlit as st
 import uuid
+import requests
 
 # --- 1. SUPABASE INITIALISATIE ---
 if "SUPABASE_URL" in st.secrets and "SUPABASE_KEY" in st.secrets:
@@ -9,7 +10,7 @@ else:
     st.error("Supabase configuratie ontbreekt in secrets!")
     st.stop()
 
-# Initialiseer de officiële Supabase Client
+# Initialiseer de officiële Supabase Client voor database inserties
 try:
     from supabase import create_client, Client
     supabase: Client = create_client(supabase_url, supabase_key)
@@ -51,7 +52,6 @@ if page == "📝 Klacht Indienen":
     st.markdown("---")
     
     # --- 3. VERWERKINGS LOGICA ---
-    # --- 3. VERWERKINGS LOGICA ---
     if st.button("Klacht Officieel Indienen", type="primary"):
         if volledige_naam.strip() and telefoon.strip() and omschrijving.strip():
             
@@ -63,27 +63,28 @@ if page == "📝 Klacht Indienen":
                     ext = file.name.split(".")[-1]
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
+                    # We gebruiken een handmatige PUT request om SDK-interne fouten te omzeilen
+                    upload_url = f"{supabase_url}/storage/v1/object/klachten-bijlagen/{unieke_bestandsnaam}"
+                    headers = {
+                        "Authorization": f"Bearer {supabase_key}",
+                        "apikey": supabase_key,
+                        "Content-Type": file.type
+                    }
+                    
                     try:
-                        # Uploaden via de officiële Supabase Storage SDK
-                        supabase.storage.from_("klachten-bijlagen").upload(
-                            path=unieke_bestandsnaam,
-                            file=file.getvalue(),
-                            file_options={"content-type": file.type}
-                        )
+                        res = requests.put(upload_url, headers=headers, data=file.getvalue())
                         
-                        # Publieke link genereren en toevoegen aan de lijst
-                        pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
-                        bijlagen_urls.append(pure_url)
-                        
-                    except Exception as upload_err:
-                        # Radicale en veilige string-conversie om ELKE '.text' of 'dict' crash te omzeilen
-                        fout_boodschap = default_error_msg = "Onbekende storage fout"
-                        try:
-                            fout_boodschap = repr(upload_err)
-                        except:
-                            fout_boodschap = str(upload_err)
-                            
-                        st.error(f"Fout bij uploaden van {file.name}: {fout_boodschap}")
+                        if res.status_code == 200:
+                            # Upload geslaagd! Publieke link opslaan
+                            pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
+                            bijlagen_urls.append(pure_url)
+                        else:
+                            # Hier lezen we de pure tekst van de server uit zonder aannames te maken over dicts
+                            st.error(f"Fout bij uploaden van {file.name}. Server antwoordde met status {res.status_code}: {res.text}")
+                            upload_succesvol = False
+                            break
+                    except Exception as http_err:
+                        st.error(f"Netwerkfout tijdens upload van {file.name}: {str(http_err)}")
                         upload_succesvol = False
                         break
             
@@ -109,9 +110,10 @@ if page == "📝 Klacht Indienen":
                     else:
                         st.error("Er ging iets mis bij het opslaan in de database.")
                 except Exception as db_error:
-                    # Ook hier voor de zekerheid veilige string-conversie toepassen
-                    st.error(f"Database fout: {repr(db_error)}")
+                    st.error(f"Database fout: {str(db_error)}")
         else:
             st.warning("Vul alstublieft de verplichte velden in: Naam, Telefoonnummer en Omschrijving.")
+
+elif page == "🔒 Medewerkers Dashboard":
     st.title("🔒 Medewerkers Dashboard")
     st.info("Dit gedeelte is klaar om ingericht te worden.")
