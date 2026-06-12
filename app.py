@@ -44,7 +44,6 @@ with st.sidebar:
 if st.session_state.logged_in:
     if menu == "Dashboard":
         st.title("Admin Dashboard")
-        # Alleen rijen met daadwerkelijke data-kaarten
         col1, col2, col3 = st.columns(3)
         with col1:
             st.markdown('<div class="card"><h3>Nieuwe Klachten</h3><div class="stat-value">12</div></div>', unsafe_allow_html=True)
@@ -54,11 +53,12 @@ if st.session_state.logged_in:
             st.markdown('<div class="card"><h3>Afgehandeld</h3><div class="stat-value">7</div></div>', unsafe_allow_html=True)
     else:
         st.title("Klacht Indienen")
-        st.write("Formulier voor medewerkers volgt.")
+        st.write("Formulier voor medewerkers.")
 else:
     # Publieke pagina
     st.markdown('<div class="header-banner"><h1>Welkom bij de Klachten Unit</h1></div>', unsafe_allow_html=True)
     
+    # Contactgegevens zonder extra containers
     col_c1, col_c2, col_c3, col_c4 = st.columns(4)
     with col_c1:
         st.markdown("**📍 Adres:**<br>Tawajarieweg no. 20", unsafe_allow_html=True)
@@ -69,11 +69,11 @@ else:
     with col_c4:
         st.markdown("**✉️ E-mail:**<br>klachtenunitwanicacentrum@gmail.com", unsafe_allow_html=True)
     
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
     
-    # Formulier container (wordt alleen getekend als deze code uitgevoerd wordt)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    # Formulier - De card DIV is hier verwerkt in de markdown
     st.header("Klacht Indienen")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     with st.form("burger_form", clear_on_submit=True):
         c1, c2 = st.columns(2)
         with c1:
