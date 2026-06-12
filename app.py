@@ -1,111 +1,57 @@
 import streamlit as st
-import uuid
 
-# --- 1. SUPABASE INITIALISATIE ---
-# Zorg dat SUPABASE_URL in secrets is: "https://hyxfprmtdqgocrgmvoyc.supabase.co"
-if "SUPABASE_URL" in st.secrets and "SUPABASE_KEY" in st.secrets:
-    supabase_url = st.secrets["SUPABASE_URL"].rstrip('/')
-    supabase_key = st.secrets["SUPABASE_KEY"]
-else:
-    st.error("Supabase configuratie ontbreekt in secrets!")
-    st.stop()
+# 1. Pagina configuratie: zet op 'wide' voor de dashboard layout
+st.set_page_config(page_title="Klachten Dashboard", layout="wide")
 
-# Initialiseer de officiële Supabase Client
-try:
-    from supabase import create_client, Client
-    supabase: Client = create_client(supabase_url, supabase_key)
-except Exception as e:
-    st.error(f"Fout bij laden van Supabase client: {e}")
-    st.stop()
+# 2. Custom CSS voor de 'Card' look (schaduw, afgeronde hoeken)
+def set_custom_style():
+    st.markdown("""
+        <style>
+        .card {
+            background-color: #ffffff;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        [data-testid="stSidebar"] {
+            background-color: #f0f2f6;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-# --- 2. PAGINA-INDELING & NAVIGATIE ---
-st.set_page_config(page_title="Klachten Unit - Commissariaat Wanica Centrum", page_icon="📝", layout="centered")
+set_custom_style()
 
-page = st.sidebar.radio("Ga naar:", ["📝 Klacht Indienen", "🔒 Medewerkers Dashboard"])
+# 3. Sidebar Menu
+with st.sidebar:
+    st.title("Menu")
+    st.radio("Ga naar:", ["Klacht Indienen", "Medewerkers Dashboard"])
 
-if page == "📝 Klacht Indienen":
-    st.title("📝 Klacht Indienen")
-    st.subheader("Burger Gegevens")
-    
-    volledige_naam = st.text_input("Volledige Naam")
-    id_nummer = st.text_input("ID-Nummer")
-    adres = st.text_input("Adres")
-    telefoon = st.text_input("Telefoon- / WhatsApp-nummer")
-    email = st.text_input("E-mailadres (Optioneel)")
-    
-    st.subheader("Details van de Klacht")
-    
-    klachtensoort = st.selectbox(
-        "Wat voor soort klacht is het?", 
-        ["Selecteer...", "Infrastructuur", "Milieu", "Grondzaken", "Wegen & Waterkant", "Overig"]
-    )
-    
-    omschrijving = st.text_area("Korte omschrijving van de klacht")
-    oplossing = st.text_area("Wat ziet u zelf als de gewenste oplossing? (Optioneel)")
-    
-    uploaded_files = st.file_uploader(
-        "Bijlagen toevoegen (Foto's of documenten)", 
-        type=["png", "jpg", "jpeg", "pdf", "docx"], 
-        accept_multiple_files=True
-    )
-    
-    st.markdown("---")
-    
-    # --- 3. VERWERKINGS LOGICA ---
-    if st.button("Klacht Officieel Indienen", type="primary"):
-        if volledige_naam.strip() and telefoon.strip() and omschrijving.strip():
-            
-            bijlagen_urls = []
-            upload_succesvol = True
-            
-            if uploaded_files:
-                for file in uploaded_files:
-                    ext = file.name.split(".")[-1]
-                    unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
-                    
-                    try:
-                        # Directe upload via SDK (werkt nu omdat de URL in secrets correct is)
-                        supabase.storage.from_("klachten-bijlagen").upload(
-                            path=unieke_bestandsnaam,
-                            file=file.getvalue(),
-                            file_options={"content-type": file.type}
-                        )
-                        
-                        # Publieke link opslaan
-                        pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
-                        bijlagen_urls.append(pure_url)
-                        
-                    except Exception as upload_err:
-                        st.error(f"Fout bij uploaden van {file.name}: {str(upload_err)}")
-                        upload_succesvol = False
-                        break
-            
-            # Data invoeren in de database als de uploads zijn geslaagd
-            if upload_succesvol:
-                klacht_data = {
-                    "volledige_naam": volledige_naam,
-                    "id_nummer": id_nummer if id_nummer else None,
-                    "adres": adres if adres else None,
-                    "telefoon_whatsapp": telefoon,
-                    "email": email if email else None,
-                    "klachtensoort": klachtensoort if klachtensoort != "Selecteer..." else "Overig",
-                    "omschrijving": omschrijving,
-                    "gewenste_oplossing": oplossing if oplossing else None,
-                    "status": "Nieuw",
-                    "bijlagen": { "urls": bijlagen_urls }
-                }
-                
-                try:
-                    response = supabase.table("klachten").insert(klacht_data).execute()
-                    if response.data:
-                        st.success("🎉 Uw klacht is succesvol ontvangen en opgeslagen!")
-                    else:
-                        st.error("Er ging iets mis bij het opslaan in de database.")
-                except Exception as db_error:
-                    st.error(f"Database fout: {str(db_error)}")
-        else:
-            st.warning("Vul alstublieft de verplichte velden in: Naam, Telefoonnummer en Omschrijving.")
+# 4. Main Dashboard Layout
+st.title("Klachten Dashboard")
 
-elif page == "🔒 Medewerkers Dashboard":
-    st.title("🔒 Medewerkers Dashboard")
-    st.info("Dit gedeelte is klaar om ingericht te worden.")
+# Bovenste rij: 3 Cards (vergelijkbaar met jouw voorbeeld)
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown('<div class="card"><h3>Nieuwe Klachten</h3><p>12 dit jaar</p></div>', unsafe_allow_html=True)
+with col2:
+    st.markdown('<div class="card"><h3>In Behandeling</h3><p>5 lopend</p></div>', unsafe_allow_html=True)
+with col3:
+    st.markdown('<div class="card"><h3>Afgehandeld</h3><p>7 voltooid</p></div>', unsafe_allow_html=True)
+
+# Middelste rij: Formulier (in een card) + Tabel
+form_col, info_col = st.columns([2, 1])
+
+with form_col:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Klacht Indienen")
+    with st.form("klacht_form"):
+        naam = st.text_input("Volledige Naam")
+        klacht = st.text_area("Omschrijving van de klacht")
+        submit = st.form_submit_button("Indienen")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with info_col:
+    st.markdown('<div class="card"><h3>Snelle Stats</h3><p>Respons tijd: 24u</p></div>', unsafe_allow_html=True)
