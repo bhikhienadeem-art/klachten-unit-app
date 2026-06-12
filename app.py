@@ -7,14 +7,24 @@ SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "sb_publishable_XnTLlOfaR0bfZ_gFXlOnuw_zxOi87kb"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Pagina instellingen
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- STYLING (Blauwe zijbalk behouden) ---
+# --- STYLING ---
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] { background-color: #004a99; }
-    [data-testid="stSidebar"] * { color: white !important; }
-    .main-title { color: #004a99; }
+    /* Blauwe zijbalk */
+    [data-testid="stSidebar"] {
+        background-color: #004a99;
+    }
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    /* Titel styling */
+    .title-style {
+        color: #004a99;
+        font-weight: bold;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -30,15 +40,15 @@ def check_login(username, password):
     except: return None
     return None
 
-# --- APP LOGICA ---
+# --- STATE ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_data = None
 
-# ZIJKANT: Inloggen
+# --- ZIJKANT (SIDEBAR) ---
 with st.sidebar:
+    st.markdown("### 🔐 Medewerker Login")
     if not st.session_state.logged_in:
-        st.markdown("### 🔐 Medewerker Login")
         user = st.text_input("Gebruikersnaam")
         pw = st.text_input("Wachtwoord", type="password")
         if st.button("Inloggen"):
@@ -47,27 +57,34 @@ with st.sidebar:
                 st.session_state.logged_in = True
                 st.session_state.user_data = data
                 st.rerun()
-            else: st.error("Onjuiste gegevens")
+            else:
+                st.error("Onjuiste gegevens")
     else:
-        st.write(f"Ingelogd: {st.session_state.user_data['username']}")
+        st.write(f"Ingelogd als: {st.session_state.user_data['username']}")
         if st.button("Log uit"):
             st.session_state.logged_in = False
+            st.session_state.user_data = None
             st.rerun()
 
-# HOOFDSCHERM: Dashboard OF Publiek Formulier
+# --- HOOFDPROGRAMMA ---
 if st.session_state.logged_in:
-    st.title("Medewerker Dashboard")
-    # Hier kun je de functies voor klachtenbeheer aanroepen
-    st.write("Je bent ingelogd. Gebruik de database om klachten af te handelen.")
+    # Hier komt je Medewerkers/Admin dashboard
+    st.title("Dashboard")
+    st.write("Welkom in het beheersysteem.")
+    # Voeg hier je functies voor klachtenoverzicht toe
 else:
-    # HET KLACHTEN FORMULIER (Zoals je het had)
-    st.markdown("<h1 class='main-title'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
+    # Hier staat je originele publieke formulier precies zoals je het wilde
+    st.markdown("<h1 class='title-style'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
     st.write("Dien hieronder je klacht in:")
+    
     with st.form("klacht_form"):
         naam = st.text_input("Volledige naam")
         omschrijving = st.text_area("Omschrijving van je klacht")
-        if st.form_submit_button("Verstuur klacht"):
+        submit = st.form_submit_button("Verstuur klacht")
+        
+        if submit:
             if naam and omschrijving:
                 supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
-                st.success("Klacht verstuurd!")
-            else: st.warning("Vul alle velden in.")
+                st.success("Klacht succesvol verstuurd!")
+            else:
+                st.error("Vul alstublieft alle velden in.")
