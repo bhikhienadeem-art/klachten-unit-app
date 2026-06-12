@@ -3,7 +3,7 @@ import streamlit as st
 # 1. Pagina configuratie
 st.set_page_config(page_title="Klachten Unit", layout="wide")
 
-# 2. Custom CSS voor de professionele look
+# 2. Custom CSS
 def set_custom_style():
     st.markdown("""
         <style>
@@ -33,8 +33,6 @@ with st.sidebar:
                 if user == "admin" and pw == "geheim":
                     st.session_state.logged_in = True
                     st.rerun()
-                else:
-                    st.error("Onjuiste gegevens")
     else:
         st.title("Klachten Systeem")
         menu = st.radio("Navigatie", ["Dashboard", "Klacht Indienen"])
@@ -53,14 +51,13 @@ if st.session_state.logged_in:
             st.markdown('<div class="card"><h3>In Behandeling</h3><div class="stat-value">5</div></div>', unsafe_allow_html=True)
         with col3:
             st.markdown('<div class="card"><h3>Afgehandeld</h3><div class="stat-value">7</div></div>', unsafe_allow_html=True)
-    elif menu == "Klacht Indienen":
+    else:
         st.title("Klacht Indienen")
-        st.markdown('<div class="card">Formulier voor medewerkers volgt...</div>', unsafe_allow_html=True)
+        st.write("Formulier voor medewerkers.")
 else:
-    # Publieke pagina
+    # Publieke pagina - SCHONE LAYOUT
     st.markdown('<div class="header-banner"><h1>Welkom bij de Klachten Unit</h1></div>', unsafe_allow_html=True)
     
-  # 4 Kolommen voor contactgegevens
     col_c1, col_c2, col_c3, col_c4 = st.columns(4)
     with col_c1:
         st.markdown("**📍 Adres:**<br>Tawajarieweg no. 20", unsafe_allow_html=True)
@@ -73,21 +70,20 @@ else:
     
     st.markdown("<br>", unsafe_allow_html=True)
     
+    # Formulier (Alleen zichtbaar als er inhoud is)
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.header("Klacht Indienen")
     with st.form("burger_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
+        c1, c2 = st.columns(2)
+        with c1:
             st.text_input("Volledige Naam")
             st.text_input("ID-Nummer")
-        with col2:
+        with c2:
             st.text_input("Telefoonnummer")
             st.text_input("E-mailadres")
-        
         st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening", "Overig"])
         st.text_area("Omschrijving")
         st.file_uploader("Documenten of Foto's uploaden", accept_multiple_files=True)
-        
         if st.form_submit_button("Verstuur Klacht"):
             st.success("Uw klacht is succesvol verzonden!")
     st.markdown('</div>', unsafe_allow_html=True)
