@@ -1,101 +1,88 @@
 import streamlit as st
+import hashlib
+from supabase import create_client
 
-# 1. Pagina configuratie
+# --- CONFIGURATIE ---
+SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
+SUPABASE_KEY = "sb_publishable_XnTLlOfaR0bfZ_gFXlOnuw_zxOi87kb"
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 st.set_page_config(page_title="Klachten Unit", layout="wide")
 
-# 2. Custom CSS
-def set_custom_style():
-    st.markdown("""
-        <style>
-        .header-banner { background-color: #1e40af; color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center; }
-        .contact-grid { display: flex; justify-content: space-around; padding-top: 15px; font-size: 0.9em; flex-wrap: wrap; }
-        [data-testid="stSidebar"] { background-color: #1e40af !important; }
-        [data-testid="stSidebar"] * { color: #ffffff !important; }
-        div[data-baseweb="base-input"] { background-color: #ffffff !important; }
-        input { color: #1e293b !important; }
-        div.stFormSubmitButton > button {
-            background-color: #60a5fa !important;
-            color: white !important;
-            font-weight: bold !important;
-            width: 100% !important;
-            border-radius: 8px !important;
-            border: none !important;
-            height: 50px !important;
-        }
-        .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
-        h3 { color: #1e293b; margin-top: 0 !important; }
-        </style>
-    """, unsafe_allow_html=True)
+# --- FUNCTIES ---
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
-set_custom_style()
+def check_login(username, password):
+    pw_hash = hash_password(password)
+    try:
+        response = supabase.table("gebruikers").select("*").eq("username", username).eq("password_hash", pw_hash).execute()
+        if response.data:
+            return response.data[0]
+    except Exception as e:
+        st.error(f"Fout bij inloggen: {e}")
+    return None
 
-# 3. Sessie beheer
+def toon_admin_gebruikers_beheer():
+    st.subheader("👥 Gebruikersbeheer")
+    with st.form("add_user_form"):
+        new_user = st.text_input("Nieuwe Gebruikersnaam")
+        new_pw = st.text_input("Wachtwoord", type="password")
+        new_role = st.selectbox("Rol", ["medewerker", "admin"])
+        if st.form_submit_button("Voeg gebruiker toe"):
+            pw_hash = hash_password(new_pw)
+            supabase.table("gebruikers").insert({"username": new_user, "password_hash": pw_hash, "role": new_role}).execute()
+            st.success("Gebruiker toegevoegd!")
+            st.rerun()
+
+    users = supabase.table("gebruikers").select("id, username, role").execute()
+    st.table(users.data)
+
+def toon_medewerker_paneel():
+    st.subheader("📋 Klachten Overzicht")
+    klachten = supabase.table("klachten").select("*").execute()
+    for k in klachten.data:
+        with st.expander(f"Klacht van: {k['volledige_naam']} - Status: {k['status']}"):
+            st.write(f"**Omschrijving:** {k['omschrijving']}")
+            new_status = st.selectbox("Status wijzigen", ["Nieuw", "In Behandeling", "Afgehandeld"], key=f"s_{k['id']}")
+            reactie = st.text_area("Reactie", value=k.get('reactie_medewerker', ''), key=f"r_{k['id']}")
+            if st.button("Opslaan", key=f"b_{k['id']}"):
+                supabase.table("klachten").update({"status": new_status, "reactie_medewerker": reactie}).eq("id", k['id']).execute()
+                st.rerun()
+
+# --- SESSY & UI ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+    st.session_state.user_data = None
 
-# 4. Sidebar
 with st.sidebar:
     if not st.session_state.logged_in:
         st.markdown("### 🔐 Medewerker Login")
-        with st.form("login_form"):
-            user = st.text_input("Gebruikersnaam")
-            pw = st.text_input("Wachtwoord", type="password")
-            if st.form_submit_button("Inloggen"):
-                if user == "admin" and pw == "geheim":
-                    st.session_state.logged_in = True
-                    st.rerun()
-                else:
-                    st.error("Onjuiste gegevens")
+        user = st.text_input("Gebruikersnaam")
+        pw = st.text_input("Wachtwoord", type="password")
+        if st.button("Inloggen"):
+            user_data = check_login(user, pw)
+            if user_data:
+                st.session_state.logged_in = True
+                st.session_state.user_data = user_data
+                st.rerun()
+            else:
+                st.error("Onjuiste gegevens")
     else:
-        st.title("Klachten Systeem")
-        menu = st.radio("Navigatie", ["Dashboard", "Klacht Indienen"])
+        st.write(f"Welkom, {st.session_state.user_data['username']}")
         if st.button("Log uit"):
             st.session_state.logged_in = False
+            st.session_state.user_data = None
             st.rerun()
 
-# 5. Hoofdinhoud
 if st.session_state.logged_in:
-    if menu == "Dashboard":
-        st.title("Admin Dashboard")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.container(border=True).markdown("### Nieuwe Klachten<br><div class='stat-value'>12</div>", unsafe_allow_html=True)
-        with col2:
-            st.container(border=True).markdown("### In Behandeling<br><div class='stat-value'>5</div>", unsafe_allow_html=True)
-        with col3:
-            st.container(border=True).markdown("### Afgehandeld<br><div class='stat-value'>7</div>", unsafe_allow_html=True)
+    rol = st.session_state.user_data['role']
+    if rol == "admin":
+        menu = st.sidebar.radio("Beheer", ["Klachten", "Gebruikers"])
+        if menu == "Klachten": toon_medewerker_paneel()
+        else: toon_admin_gebruikers_beheer()
     else:
-        st.title("Klacht Indienen")
-        st.write("Formulier voor medewerkers.")
+        toon_medewerker_paneel()
 else:
-    # Publieke pagina - Hier was je content weggevallen
-    st.markdown('''
-        <div class="header-banner">
-            <h1>Welkom bij de Klachten Unit Wanica Centrum</h1>
-            <p>Dien hieronder uw klacht in.</p>
-            <div class="contact-grid">
-                <div>📍 <b>Adres:</b><br>Tawajarieweg no. 20</div>
-                <div>📞 <b>Telefoon:</b><br>+597-366660 / +597-366929</div>
-                <div>💬 <b>WhatsApp:</b><br>+597-8921062</div>
-                <div>✉️ <b>E-mail:</b><br>klachtenunitwanicacentrum@gmail.com</div>
-            </div>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    st.header("Klacht Indienen")
-    with st.container(border=True):
-        with st.form("burger_form", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            with c1:
-                st.text_input("Volledige Naam")
-                st.text_input("ID-Nummer")
-            with c2:
-                st.text_input("Telefoonnummer/Whatsappnummer")
-                st.text_input("E-mailadres")
-            
-            st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening", "Milieu en Gezondheid", "Overig"])
-            st.text_area("Omschrijving/Eventuele oplossing")
-            st.file_uploader("Documenten of Foto's uploaden", accept_multiple_files=True)
-            
-            if st.form_submit_button("Verstuur Klacht"):
-                st.success("Uw klacht is succesvol verzonden!")
+    st.title("Welkom bij de Klachten Unit Wanica Centrum")
+    st.write("Log in via het menu links.")
