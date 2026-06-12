@@ -79,7 +79,7 @@ if st.session_state.logged_in:
 else:
     # Publieke pagina voor burgers
     st.markdown('<div class="header-banner"><h1>Welkom bij de Klachten Unit</h1></div>', unsafe_allow_html=True)
-    st.write("Dien hieronder uw klacht in. Medewerkers kunnen inloggen via de zijbalk.")
+    st.write("Dien hieronder uw klacht in.")
     
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.header("Klacht Indienen")
@@ -93,7 +93,7 @@ else:
             st.text_input("E-mailadres")
         
         st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening", "Overig"])
-        st.text_area("Omschrijving")
+        st.text_area("Omschrijving/Eventueel oplossing")
         st.file_uploader("Documenten of Foto's uploaden", accept_multiple_files=True)
         
         if st.form_submit_button("Verstuur Klacht"):
