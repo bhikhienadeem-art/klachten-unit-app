@@ -7,7 +7,6 @@ st.set_page_config(page_title="Klachten Unit", layout="wide")
 def set_custom_style():
     st.markdown("""
         <style>
-        /* Blauwe Header Banner met contactgegevens */
         .header-banner { 
             background-color: #1e40af; 
             color: white; 
@@ -30,6 +29,13 @@ def set_custom_style():
         [data-testid="stSidebar"] * { 
             color: #ffffff !important; 
         }
+        /* Zichtbare Inlogknop */
+        div.stFormSubmitButton > button {
+            background-color: #ffffff !important;
+            color: #1e40af !important;
+            font-weight: bold;
+            width: 100%;
+        }
         .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
         h3 { color: #1e293b; margin-top: 0 !important; }
         </style>
@@ -44,7 +50,7 @@ if "logged_in" not in st.session_state:
 # 4. Sidebar
 with st.sidebar:
     if not st.session_state.logged_in:
-        st.title("🔐 Medewerker Login")
+        st.markdown("### 🔐 Medewerker Login")
         with st.form("login_form"):
             user = st.text_input("Gebruikersnaam")
             pw = st.text_input("Wachtwoord", type="password")
@@ -52,6 +58,8 @@ with st.sidebar:
                 if user == "admin" and pw == "geheim":
                     st.session_state.logged_in = True
                     st.rerun()
+                else:
+                    st.error("Onjuiste gegevens")
     else:
         st.title("Klachten Systeem")
         menu = st.radio("Navigatie", ["Dashboard", "Klacht Indienen"])
@@ -74,11 +82,11 @@ if st.session_state.logged_in:
         st.title("Klacht Indienen")
         st.write("Formulier voor medewerkers.")
 else:
-    # Publieke pagina - Blauwe header met contact info
+    # Publieke pagina
     st.markdown('''
         <div class="header-banner">
             <h1>Welkom bij de Klachten Unit Wanica Centrum</h1>
-            <p>Dien hieronder uw klacht in..</p>
+            <p>Dien hieronder uw klacht in.</p>
             <div class="contact-grid">
                 <div>📍 <b>Adres:</b><br>Tawajarieweg no. 20</div>
                 <div>📞 <b>Telefoon:</b><br>+597-366660 / +597-366929</div>
@@ -99,7 +107,7 @@ else:
                 st.text_input("Telefoonnummer/Whatsappnummer")
                 st.text_input("E-mailadres")
             
-            st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening","Milieu en Gezondheid" "Overig"])
+            st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening", "Milieu en Gezondheid", "Overig"])
             st.text_area("Omschrijving/Eventuele oplossing")
             st.file_uploader("Documenten of Foto's uploaden", accept_multiple_files=True)
             
