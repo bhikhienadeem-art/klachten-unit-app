@@ -10,7 +10,7 @@ else:
     st.error("Supabase configuratie ontbreekt in secrets!")
     st.stop()
 
-# Initialiseer de officiële Supabase Client voor database inserties
+# Initialiseer de officiële Supabase Client
 try:
     from supabase import create_client, Client
     supabase: Client = create_client(supabase_url, supabase_key)
@@ -63,7 +63,7 @@ if page == "📝 Klacht Indienen":
                     ext = file.name.split(".")[-1]
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
-                    # CORRECTIE: '/object/' is toegevoegd tussen /v1/ en de bucketnaam
+                    # Methode A: Directe API Upload via het officiële REST endpoint
                     upload_url = f"{supabase_url}/storage/v1/object/klachten-bijlagen/{unieke_bestandsnaam}"
                     headers = {
                         "Authorization": f"Bearer {supabase_key}",
@@ -72,23 +72,34 @@ if page == "📝 Klacht Indienen":
                     }
                     
                     try:
-                        # Nieuw bestand vereist een HTTP POST naar het object endpoint
                         res = requests.post(upload_url, headers=headers, data=file.getvalue())
                         
                         if res.status_code == 200:
-                            # Upload geslaagd! Publieke link genereren
                             pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
                             bijlagen_urls.append(pure_url)
+                            continue
                         else:
-                            st.error(f"Fout bij uploaden van {file.name}. Server antwoordde met status {res.status_code}: {res.text}")
+                            # Als de REST API faalt met PGRST125, proberen we direct Methode B (de SDK)
+                            raise RuntimeError("REST API route niet bereikbaar, schakel over naar SDK.")
+                            
+                    except Exception:
+                        # Methode B: Fallback via de SDK om eventuele URL-routing problemen te omzeilen
+                        try:
+                            supabase.storage.from_("klachten-bijlagen").upload(
+                                path=unieke_bestandsnaam,
+                                file=file.getvalue(),
+                                file_options={"content-type": file.type}
+                            )
+                            pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
+                            bijlagen_urls.append(pure_url)
+                        except Exception as sdk_err:
+                            # Veilige weergave van de SDK fout zonder interne 'dict' attribute crashes
+                            fout_boodschap = sdk_err.message if hasattr(sdk_err, 'message') else str(sdk_err)
+                            st.error(f"Fout bij uploaden van {file.name}: {fout_boodschap}")
                             upload_succesvol = False
                             break
-                    except Exception as http_err:
-                        st.error(f"Netwerkfout tijdens upload van {file.name}: {str(http_err)}")
-                        upload_succesvol = False
-                        break
             
-            # Data invoeren in de database als de uploads (indien aanwezig) zijn geslaagd
+            # Data invoeren in de database als de uploads zijn geslaagd
             if upload_succesvol:
                 klacht_data = {
                     "volledige_naam": volledige_naam,
