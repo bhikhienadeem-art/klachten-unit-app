@@ -1,12 +1,21 @@
 import streamlit as st
 
-# Pagina configuratie
+# 1. Pagina configuratie
 st.set_page_config(page_title="Klachten Unit", layout="wide")
 
-# 1. Custom CSS voor de professionele look
+# 2. Custom CSS voor de professionele look
 def set_custom_style():
     st.markdown("""
         <style>
+        /* Header Banner */
+        .header-banner {
+            background-color: #1e40af;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
         /* Modern Cards */
         .card {
             background-color: #ffffff;
@@ -17,12 +26,9 @@ def set_custom_style():
             margin-bottom: 20px;
         }
         /* Sidebar styling */
-        [data-testid="stSidebar"] {
-            background-color: #0f172a;
-        }
-        [data-testid="stSidebar"] * {
-            color: #ffffff;
-        }
+        [data-testid="stSidebar"] { background-color: #0f172a; }
+        [data-testid="stSidebar"] * { color: #ffffff; }
+        
         /* Dashboard tekst */
         .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
         h3 { color: #1e293b; margin-top: 0 !important; }
@@ -31,11 +37,11 @@ def set_custom_style():
 
 set_custom_style()
 
-# 2. Sessie beheer
+# 3. Sessie beheer
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# 3. Sidebar (Inloggen of Navigatie)
+# 4. Sidebar (Inloggen of Navigatie)
 with st.sidebar:
     if not st.session_state.logged_in:
         st.title("🔐 Medewerker Login")
@@ -55,7 +61,7 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# 4. Main Page Logic
+# 5. Hoofdinhoud
 if st.session_state.logged_in:
     if menu == "Dashboard":
         st.title("Admin Dashboard")
@@ -66,16 +72,13 @@ if st.session_state.logged_in:
             st.markdown('<div class="card"><h3>In Behandeling</h3><div class="stat-value">5</div></div>', unsafe_allow_html=True)
         with col3:
             st.markdown('<div class="card"><h3>Afgehandeld</h3><div class="stat-value">7</div></div>', unsafe_allow_html=True)
-            
     elif menu == "Klacht Indienen":
-        # Formulier voor medewerkers (zelfde als burger)
-        st.title("Klacht Indienen")
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        # Formulier code...
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.title("Klacht Indienen (Medewerker)")
+        st.markdown('<div class="card">...formulier voor medewerkers...</div>', unsafe_allow_html=True)
+
 else:
     # Publieke pagina voor burgers
-    st.title("Welkom bij de Klachten Unit")
+    st.markdown('<div class="header-banner"><h1>Welkom bij de Klachten Unit</h1></div>', unsafe_allow_html=True)
     st.write("Dien hieronder uw klacht in. Medewerkers kunnen inloggen via de zijbalk.")
     
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -94,5 +97,5 @@ else:
         st.file_uploader("Documenten of Foto's uploaden", accept_multiple_files=True)
         
         if st.form_submit_button("Verstuur Klacht"):
-            st.success("Uw klacht is verzonden!")
+            st.success("Uw klacht is succesvol verzonden!")
     st.markdown('</div>', unsafe_allow_html=True)
