@@ -51,6 +51,7 @@ if page == "📝 Klacht Indienen":
     st.markdown("---")
     
     # --- 3. VERWERKINGS LOGICA ---
+    # --- 3. VERWERKINGS LOGICA ---
     if st.button("Klacht Officieel Indienen", type="primary"):
         if volledige_naam.strip() and telefoon.strip() and omschrijving.strip():
             
@@ -75,12 +76,11 @@ if page == "📝 Klacht Indienen":
                         bijlagen_urls.append(pure_url)
                         
                     except Exception as upload_err:
-                        # Veilige extractie van de foutmelding (voorkomt de 'dict' Has No Attribute 'text' crash)
-                        if hasattr(upload_err, "message"):
-                            fout_boodschap = upload_err.message
-                        elif isinstance(upload_err, dict) and "message" in upload_err:
-                            fout_boodschap = upload_err["message"]
-                        else:
+                        # Radicale en veilige string-conversie om ELKE '.text' of 'dict' crash te omzeilen
+                        fout_boodschap = default_error_msg = "Onbekende storage fout"
+                        try:
+                            fout_boodschap = repr(upload_err)
+                        except:
                             fout_boodschap = str(upload_err)
                             
                         st.error(f"Fout bij uploaden van {file.name}: {fout_boodschap}")
@@ -109,10 +109,9 @@ if page == "📝 Klacht Indienen":
                     else:
                         st.error("Er ging iets mis bij het opslaan in de database.")
                 except Exception as db_error:
-                    st.error(f"Database fout: {str(db_error)}")
+                    # Ook hier voor de zekerheid veilige string-conversie toepassen
+                    st.error(f"Database fout: {repr(db_error)}")
         else:
             st.warning("Vul alstublieft de verplichte velden in: Naam, Telefoonnummer en Omschrijving.")
-
-elif page == "🔒 Medewerkers Dashboard":
     st.title("🔒 Medewerkers Dashboard")
     st.info("Dit gedeelte is klaar om ingericht te worden.")
