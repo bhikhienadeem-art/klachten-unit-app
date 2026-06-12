@@ -7,29 +7,10 @@ st.set_page_config(page_title="Klachten Unit", layout="wide")
 def set_custom_style():
     st.markdown("""
         <style>
-        /* Header Banner */
-        .header-banner {
-            background-color: #1e40af;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-        /* Modern Cards */
-        .card {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 20px;
-        }
-        /* Sidebar styling */
+        .header-banner { background-color: #1e40af; color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center; }
+        .card { background-color: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; margin-bottom: 20px; }
         [data-testid="stSidebar"] { background-color: #0f172a; }
         [data-testid="stSidebar"] * { color: #ffffff; }
-        
-        /* Dashboard tekst */
         .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
         h3 { color: #1e293b; margin-top: 0 !important; }
         </style>
@@ -41,7 +22,7 @@ set_custom_style()
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# 4. Sidebar (Inloggen of Navigatie)
+# 4. Sidebar
 with st.sidebar:
     if not st.session_state.logged_in:
         st.title("🔐 Medewerker Login")
@@ -73,13 +54,22 @@ if st.session_state.logged_in:
         with col3:
             st.markdown('<div class="card"><h3>Afgehandeld</h3><div class="stat-value">7</div></div>', unsafe_allow_html=True)
     elif menu == "Klacht Indienen":
-        st.title("Klacht Indienen (Medewerker)")
-        st.markdown('<div class="card">...formulier voor medewerkers...</div>', unsafe_allow_html=True)
-
+        st.title("Klacht Indienen")
+        st.markdown('<div class="card">Formulier voor medewerkers volgt...</div>', unsafe_allow_html=True)
 else:
-    # Publieke pagina voor burgers
+    # Publieke pagina
     st.markdown('<div class="header-banner"><h1>Welkom bij de Klachten Unit</h1></div>', unsafe_allow_html=True)
-    st.write("Dien hieronder uw klacht in.")
+    
+    # Contactgegevens
+    col_c1, col_c2, col_c3 = st.columns(3)
+    with col_c1:
+        st.markdown("**📍 Adres:**<br>Tawajarieweg no. 20", unsafe_allow_html=True)
+    with col_c2:
+        st.markdown("**📞 Telefoon:**<br>+597-366660 / +597-366929", unsafe_allow_html=True)
+    with col_c3:
+        st.markdown("**✉️ E-mail:**<br>klachtenunitwanicacentrum@gmail.com", unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.header("Klacht Indienen")
@@ -93,7 +83,7 @@ else:
             st.text_input("E-mailadres")
         
         st.selectbox("Soort klacht", ["Infrastructuur", "Dienstverlening", "Overig"])
-        st.text_area("Omschrijving/Eventueel oplossing")
+        st.text_area("Omschrijving")
         st.file_uploader("Documenten of Foto's uploaden", accept_multiple_files=True)
         
         if st.form_submit_button("Verstuur Klacht"):
