@@ -1,7 +1,5 @@
 import streamlit as st
 from supabase import create_client, Client
-import os
-import time
 import pandas as pd
 
 # 1. Pagina-instellingen
@@ -29,11 +27,10 @@ pagina = st.sidebar.radio("Ga naar:", ["📋 Klacht Indienen", "🔒 Medewerkers
 # ==============================================================================
 if pagina == "📋 Klacht Indienen":
     st.title("📋 Klachten Unit Wanica Centrum")
-    st.write("Welkom bij het officiële klachtenformulier van het Commissariaat Wanica Centrum.")
-    st.write("Vul de onderstaande velden zo nauwkeurig mogelijk in.")
+    st.write("Welkom bij het officiële klachtenformulier. Vul de velden zo nauwkeurig mogelijk in.")
     st.markdown("---")
 
-    # Het Formulier - Gegevens Melder
+    # Het Formulier - Burgergegevens
     st.subheader("👤 Gegevens van de Melder")
     volledige_naam = st.text_input("Volledige Naam", placeholder="Voor- en achternaam")
     id_nummer = st.text_input("ID-Nummer", placeholder="Bijv. FI000000M")
@@ -42,34 +39,39 @@ if pagina == "📋 Klacht Indienen":
 
     st.markdown("---")
 
-    # Het Formulier - Details Klacht
+    # Het Formulier - Klachtdetails
     st.subheader("📝 Details van de Klacht")
-    soort_klacht = st.text_input("Wat voor soort klacht is het?", placeholder="Bijvoorbeeld: Wegen, Vuilophaal, Wateroverlast, etc.")
+    klachtensoort = st.text_input("Wat voor soort klacht is het?", placeholder="Bijvoorbeeld: Wegen, Vuilophaal, Wateroverlast, etc.")
     omschrijving = st.text_area("Korte omschrijving van de klacht", placeholder="Beschrijf hier zo duidelijk mogelijk wat er aan de hand is...")
-    
+
     st.markdown("---")
 
     if st.button("Klacht Officieel Indienen", type="primary"):
-        if not volledige_naam.strip() or not soort_klacht.strip() or not omschrijving.strip():
+        if not volledige_naam.strip() or not klachtensoort.strip() or not omschrijving.strip():
             st.warning("Zorg ervoor dat je ten minste je naam, het soort klacht en de omschrijving invult!")
         else:
             with st.spinner("Uw klacht wordt veilig verwerkt..."):
                 try:
-                    # Gegevens invoegen in de juiste tabel 'klachten'
-                    supabase.table("klachten").insert({
+                    # Invoegen in de database (EXACT gematcht met jouw databasekolommen)
+                    data_to_insert = {
                         "volledige_naam": str(volledige_naam),
                         "id_nummer": str(id_nummer),
                         "adres": str(adres),
                         "telefoon_whatsapp": str(telefoon_whatsapp),
-                        "soort_klacht": str(soort_klacht),
-                        "omschrijving": str(omschrijving)
-                    }).execute()
+                        "klachtensoort": str(klachtensoort),
+                        "omschrijving": str(omschrijving),
+                        "status": "Nieuw"  # Standaard status meegeven aan de status-kolom
+                    }
+
+                    # Veilige aanroep om interne postgrest-py bugs te voorkomen
+                    supabase.table("klachten").insert(data_to_insert).execute()
 
                     st.success("🎉 Uw klacht is succesvol ontvangen en geregistreerd bij het Commissariaat!")
                     st.balloons()
 
                 except Exception as error:
                     st.error("⚠️ De database weigert de gegevens op te slaan.")
+                    st.info("Controleer of de applicatie-secrets in Streamlit Cloud gekoppeld zijn aan de juiste database.")
                     st.text(f"Foutdetails: {str(error)}")
 
 # ==============================================================================
@@ -85,9 +87,9 @@ elif pagina == "🔒 Medewerkers Dashboard":
         st.success("Toegang verleend!")
         st.subheader("📋 Overzicht Ingediende Klachten")
         
-        with st.spinner("Klachten ophalen..."):
+        with st.spinner("Klachten ophalen uit de database..."):
             try:
-                # Alleen de klachten-tabel uitlezen
+                # Haal gegevens op uit de 'klachten' tabel
                 response = supabase.table("klachten").select("*").execute()
                 klachten_data = response.data
                 
@@ -96,17 +98,17 @@ elif pagina == "🔒 Medewerkers Dashboard":
                 else:
                     df = pd.DataFrame(klachten_data)
                     
-                    # Kolommen netjes ordenen voor het overzicht
+                    # Kolommen netjes sorteren voor het overzicht van de medewerker
                     kolommen_volgorde = [
-                        "id", "created_at", "volledige_naam", "id_nummer", 
-                        "telefoon_whatsapp", "adres", "soort_klacht", "omschrijving"
+                        "id", "created_at", "status", "volledige_naam", "id_nummer", 
+                        "telefoon_whatsapp", "adres", "klachtensoort", "omschrijving"
                     ]
                     beschikbare_kolommen = [col for col in kolommen_volgorde if col in df.columns]
                     df = df[beschikbare_kolommen]
                     
                     st.dataframe(df, use_container_width=True)
                     
-                    # CSV Downloadoptie
+                    # Exporteren naar Excel/CSV
                     csv = df.to_csv(index=False).encode('utf-8')
                     st.download_button(
                         label="📥 Download Klachtenrapport (CSV)",
