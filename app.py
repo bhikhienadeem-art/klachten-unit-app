@@ -7,23 +7,16 @@ SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "sb_publishable_XnTLlOfaR0bfZ_gFXlOnuw_zxOi87kb"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Pagina instellingen
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- STYLING (Herstelt je blauwe balk en layout) ---
+# --- STYLING (Blauwe zijbalk) ---
 st.markdown("""
     <style>
-    /* Blauwe zijbalk */
     [data-testid="stSidebar"] {
         background-color: #004a99;
     }
     [data-testid="stSidebar"] * {
         color: white !important;
-    }
-    /* Titel styling */
-    .title-style {
-        color: #004a99;
-        font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -40,12 +33,12 @@ def check_login(username, password):
     except: return None
     return None
 
-# --- STATE MANAGEMENT ---
+# --- STATE ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_data = None
 
-# --- ZIJKANT (SIDEBAR LOGIN) ---
+# --- ZIJKANT (Login) ---
 with st.sidebar:
     st.markdown("### 🔐 Medewerker Login")
     if not st.session_state.logged_in:
@@ -63,28 +56,37 @@ with st.sidebar:
         st.write(f"Ingelogd als: {st.session_state.user_data['username']}")
         if st.button("Log uit"):
             st.session_state.logged_in = False
-            st.session_state.user_data = None
             st.rerun()
 
 # --- HOOFDPROGRAMMA ---
 if st.session_state.logged_in:
-    # Hier ziet de ingelogde medewerker het dashboard
     st.title("Dashboard")
-    st.write("Welkom in het beheersysteem. Je kunt nu klachten beheren.")
-    # (Hier kun je later je functies voor klachtenoverzicht weer toevoegen)
+    st.write("Welkom, je bent ingelogd als medewerker.")
 else:
-    # HET ORIGINELE FORMULIER (Direct zichtbaar bij opstarten)
-    st.markdown("<h1 class='title-style'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
+    st.title("Welkom bij de Klachten Unit Wanica Centrum")
     st.write("Dien hieronder je klacht in:")
     
     with st.form("klacht_form"):
+        # Hier staan al je velden weer terug
         naam = st.text_input("Volledige naam")
+        email = st.text_input("E-mailadres") # Extra veld teruggeplaatst
+        telefoon = st.text_input("Telefoonnummer") # Extra veld teruggeplaatst
+        onderwerp = st.selectbox("Onderwerp", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("Omschrijving van je klacht")
+        
         submit = st.form_submit_button("Verstuur klacht")
         
         if submit:
             if naam and omschrijving:
-                supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
+                # Let op: zorg dat je tabel 'klachten' in Supabase deze kolommen ook heeft
+                supabase.table("klachten").insert({
+                    "volledige_naam": naam, 
+                    "email": email,
+                    "telefoon": telefoon,
+                    "onderwerp": onderwerp,
+                    "omschrijving": omschrijving, 
+                    "status": "Nieuw"
+                }).execute()
                 st.success("Klacht succesvol verstuurd!")
             else:
-                st.error("Vul alstublieft alle velden in.")
+                st.error("Vul ten minste je naam en omschrijving in.")
