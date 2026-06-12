@@ -51,7 +51,7 @@ if page == "📝 Klacht Indienen":
     
     st.markdown("---")
     
-    # --- 3. VERWERKINGS LOGICA ---
+   # --- 3. VERWERKINGS LOGICA ---
     if st.button("Klacht Officieel Indienen", type="primary"):
         if volledige_naam.strip() and telefoon.strip() and omschrijving.strip():
             
@@ -63,7 +63,7 @@ if page == "📝 Klacht Indienen":
                     ext = file.name.split(".")[-1]
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
-                    # We gebruiken een handmatige PUT request om SDK-interne fouten te omzeilen
+                    # Juiste URL-structuur voor een nieuwe Storage POST upload via de REST API
                     upload_url = f"{supabase_url}/storage/v1/object/klachten-bijlagen/{unieke_bestandsnaam}"
                     headers = {
                         "Authorization": f"Bearer {supabase_key}",
@@ -72,14 +72,14 @@ if page == "📝 Klacht Indienen":
                     }
                     
                     try:
-                        res = requests.put(upload_url, headers=headers, data=file.getvalue())
+                        # Supabase Storage vereist een POST voor gloednieuwe bestanden
+                        res = requests.post(upload_url, headers=headers, data=file.getvalue())
                         
                         if res.status_code == 200:
                             # Upload geslaagd! Publieke link opslaan
                             pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
                             bijlagen_urls.append(pure_url)
                         else:
-                            # Hier lezen we de pure tekst van de server uit zonder aannames te maken over dicts
                             st.error(f"Fout bij uploaden van {file.name}. Server antwoordde met status {res.status_code}: {res.text}")
                             upload_succesvol = False
                             break
@@ -113,7 +113,3 @@ if page == "📝 Klacht Indienen":
                     st.error(f"Database fout: {str(db_error)}")
         else:
             st.warning("Vul alstublieft de verplichte velden in: Naam, Telefoonnummer en Omschrijving.")
-
-elif page == "🔒 Medewerkers Dashboard":
-    st.title("🔒 Medewerkers Dashboard")
-    st.info("Dit gedeelte is klaar om ingericht te worden.")
