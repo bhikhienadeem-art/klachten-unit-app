@@ -69,8 +69,6 @@ else:
     with col_c4:
         st.markdown("**✉️ E-mail:**<br>klachtenunitwanicacentrum@gmail.com", unsafe_allow_html=True)
     
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    
     # Formulier - De card DIV is hier verwerkt in de markdown
     st.header("Klacht Indienen")
     st.markdown('<div class="card">', unsafe_allow_html=True)
