@@ -20,7 +20,6 @@ if page == "📝 Klacht Indienen":
     st.title("📝 Klacht Indienen")
     st.subheader("Burger Gegevens")
     
-    # Invoervelden gebaseerd op jouw database kolommen
     volledige_naam = st.text_input("Volledige Naam")
     id_nummer = st.text_input("ID-Nummer")
     adres = st.text_input("Adres")
@@ -47,34 +46,43 @@ if page == "📝 Klacht Indienen":
     
     # --- 3. VERWERKINGS LOGICA ---
     if st.button("Klacht Officieel Indienen", type="primary"):
-        # Validatie: Belangrijke velden mogen niet leeg zijn
         if volledige_naam.strip() and telefoon.strip() and omschrijving.strip():
             
             bijlagen_urls = []
             upload_succesvol = True
             
-            # Bestanden uploaden naar de 'klachten-bijlagen' bucket
             if uploaded_files:
                 for file in uploaded_files:
                     ext = file.name.split(".")[-1]
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
                     try:
+                        # GEWIJZIGD: We halen de file_options weg of vereenvoudigen het.
+                        # Supabase herkent bytes uploads tegenwoordig direct prima zelf.
                         supabase.storage.from_('klachten-bijlagen').upload(
                             path=unieke_bestandsnaam,
-                            file=file.getvalue(),
-                            file_options={"content-type": file.type}
+                            file=file.getvalue()
                         )
                         
                         # Publieke URL genereren
                         url_res = supabase.storage.from_('klachten-bijlagen').get_public_url(unieke_bestandsnaam)
-                        bijlagen_urls.append(url_res)
+                        
+                        # Soms geeft get_public_url direct een string terug, soms een object/dict afhankelijk van de SDK versie.
+                        # We zorgen hier dat we altijd de pure string-URL pakken.
+                        if isinstance(url_res, dict) and "publicUrl" in url_res:
+                            pure_url = url_res["publicUrl"]
+                        elif hasattr(url_res, "public_url"):
+                            pure_url = url_res.public_url
+                        else:
+                            pure_url = str(url_res)
+                            
+                        bijlagen_urls.append(pure_url)
                         
                     except Exception as e:
                         st.error(f"Fout bij het uploaden van {file.name}: {e}")
                         upload_succesvol = False
             
-            # Als de uploads goed gingen, slaan we alles op in de tabel
+            # Als de uploads goed gingen (of er waren er geen), opslaan in de database
             if upload_succesvol:
                 klacht_data = {
                     "volledige_naam": volledige_naam,
@@ -86,7 +94,7 @@ if page == "📝 Klacht Indienen":
                     "omschrijving": omschrijving,
                     "gewenste_oplossing": oplossing if oplossing else None,
                     "status": "Nieuw",
-                    "bijlagen": { "urls": bijlagen_urls }  # Wordt netjes opgeslagen in je json kolom
+                    "bijlagen": { "urls": bijlagen_urls }
                 }
                 
                 try:
