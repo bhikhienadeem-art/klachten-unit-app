@@ -1,6 +1,5 @@
 import streamlit as st
 import uuid
-import requests  # Gebruiken we als stabiele fallback voor de upload
 
 # --- 1. SUPABASE INITIALISATIE ---
 if "SUPABASE_URL" in st.secrets and "SUPABASE_KEY" in st.secrets:
@@ -10,12 +9,13 @@ else:
     st.error("Supabase configuratie ontbreekt in secrets!")
     st.stop()
 
-# Probeer de library te initialiseren
+# Initialiseer de officiële Supabase Client
 try:
     from supabase import create_client, Client
     supabase: Client = create_client(supabase_url, supabase_key)
 except Exception as e:
     st.error(f"Fout bij laden van Supabase client: {e}")
+    st.stop()
 
 # --- 2. PAGINA-INDELING & NAVIGATIE ---
 st.set_page_config(page_title="Klachten Unit - Commissariaat Wanica Centrum", page_icon="📝", layout="centered")
@@ -62,32 +62,24 @@ if page == "📝 Klacht Indienen":
                     ext = file.name.split(".")[-1]
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
-                    # Directe HTTP Upload (Vrijwaart ons van SDK fouten/bugs)
-                    upload_url = f"{supabase_url}/storage/v1/object/klachten-bijlagen/{unieke_bestandsnaam}"
-                    headers = {
-                        "Authorization": f"Bearer {supabase_key}",
-                        "apikey": supabase_key,
-                        "Content-Type": file.type
-                    }
-                    
                     try:
-                        res = requests.post(upload_url, headers=headers, data=file.getvalue())
+                        # Uploaden via de officiële Supabase Storage SDK
+                        supabase.storage.from_("klachten-bijlagen").upload(
+                            path=unieke_bestandsnaam,
+                            file=file.getvalue(),
+                            file_options={"content-type": file.type}
+                        )
                         
-                        if res.status_code == 200:
-                            # Upload geslaagd! Publieke link opslaan
-                            pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
-                            bijlagen_urls.append(pure_url)
-                        else:
-                            # Geef de exacte server-fout terug (bijv. 403 Forbidden = Rechten kwestie)
-                            st.error(f"Fout bij uploaden van {file.name}. Server antwoordde met status {res.status_code}: {res.text}")
-                            upload_succesvol = False
-                            break
-                    except Exception as http_err:
-                        st.error(f"Netwerkfout tijdens upload van {file.name}: {str(http_err)}")
+                        # Publieke link genereren en toevoegen aan de lijst
+                        pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
+                        bijlagen_urls.append(pure_url)
+                        
+                    except Exception as upload_err:
+                        st.error(f"Fout bij uploaden van {file.name}: {str(upload_err)}")
                         upload_succesvol = False
                         break
             
-            # Data invoeren in de database
+            # Data invoeren in de database als de uploads (indien aanwezig) zijn geslaagd
             if upload_succesvol:
                 klacht_data = {
                     "volledige_naam": volledige_naam,
