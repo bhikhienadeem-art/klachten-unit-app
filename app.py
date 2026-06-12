@@ -1,77 +1,106 @@
 import streamlit as st
 import uuid
+from supabase import create_client, Client
 
-# --- BESTAANDE VELDEN ---
-telefoon = st.text_input("Telefoon- / WhatsApp-nummer")
-email = st.text_input("E-mailadres (Optioneel)")
+# --- 1. SUPABASE INITIALISATIE ---
+@st.cache_resource
+def init_supabase() -> Client:
+    url: str = st.secrets["SUPABASE_URL"]
+    key: str = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
-# Verondersteld dat je dit al had voor het type klacht
-type_klacht = st.selectbox("Wat voor soort klacht is het?", ["Selecteer...", "Infrastructuur", "Milieu", "Overig"]) 
-omschrijving = st.text_area("Korte omschrijving van de klacht")
+supabase = init_supabase()
 
-# --- NIEUWE VELDEN ---
-oplossing = st.text_area("Wat ziet u zelf als de gewenste oplossing? (Optioneel)")
+# --- 2. PAGINA-INDELING & NAVIGATIE ---
+st.set_page_config(page_title="Klachten Unit - Commissariaat Wanica Centrum", page_icon="📝", layout="centered")
 
-# File uploader voor foto's en documenten
-uploaded_files = st.file_uploader(
-    "Bijlagen toevoegen (Foto's of documenten)", 
-    type=["png", "jpg", "jpeg", "pdf", "docx"], 
-    accept_multiple_files=True
-)
+page = st.sidebar.radio("Ga naar:", ["📝 Klacht Indienen", "🔒 Medewerkers Dashboard"])
 
-st.markdown("---")
-
-# --- VERWERKINGS LOGICA ---
-if st.button("Klacht Officieel Indienen", type="primary"):
-    if telefoon and omschrijving:  # Basis validatie
-        
-        bijlagen_urls = []
-        
-        # 1. Bestanden uploaden naar Supabase Storage (als er bestanden zijn geselecteerd)
-        if uploaded_files:
-            for file in uploaded_files:
-                # Unieke naam genereren om overschrijven in de storage bucket te voorkomen
-                ext = file.name.split(".")[-1]
-                unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
+if page == "📝 Klacht Indienen":
+    st.title("📝 Klacht Indienen")
+    st.subheader("Burger Gegevens")
+    
+    # Invoervelden gebaseerd op jouw database kolommen
+    volledige_naam = st.text_input("Volledige Naam")
+    id_nummer = st.text_input("ID-Nummer")
+    adres = st.text_input("Adres")
+    telefoon = st.text_input("Telefoon- / WhatsApp-nummer")
+    email = st.text_input("E-mailadres (Optioneel)")
+    
+    st.subheader("Details van de Klacht")
+    
+    klachtensoort = st.selectbox(
+        "Wat voor soort klacht is het?", 
+        ["Selecteer...", "Infrastructuur", "Milieu", "Grondzaken", "Wegen & Waterkant", "Overig"]
+    )
+    
+    omschrijving = st.text_area("Korte omschrijving van de klacht")
+    oplossing = st.text_area("Wat ziet u zelf als de gewenste oplossing? (Optioneel)")
+    
+    uploaded_files = st.file_uploader(
+        "Bijlagen toevoegen (Foto's of documenten)", 
+        type=["png", "jpg", "jpeg", "pdf", "docx"], 
+        accept_multiple_files=True
+    )
+    
+    st.markdown("---")
+    
+    # --- 3. VERWERKINGS LOGICA ---
+    if st.button("Klacht Officieel Indienen", type="primary"):
+        # Validatie: Belangrijke velden mogen niet leeg zijn
+        if volledige_naam.strip() and telefoon.strip() and omschrijving.strip():
+            
+            bijlagen_urls = []
+            upload_succesvol = True
+            
+            # Bestanden uploaden naar de 'klachten-bijlagen' bucket
+            if uploaded_files:
+                for file in uploaded_files:
+                    ext = file.name.split(".")[-1]
+                    unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
+                    
+                    try:
+                        supabase.storage.from_('klachten-bijlagen').upload(
+                            path=unieke_bestandsnaam,
+                            file=file.getvalue(),
+                            file_options={"content-type": file.type}
+                        )
+                        
+                        # Publieke URL genereren
+                        url_res = supabase.storage.from_('klachten-bijlagen').get_public_url(unieke_bestandsnaam)
+                        bijlagen_urls.append(url_res)
+                        
+                    except Exception as e:
+                        st.error(f"Fout bij het uploaden van {file.name}: {e}")
+                        upload_succesvol = False
+            
+            # Als de uploads goed gingen, slaan we alles op in de tabel
+            if upload_succesvol:
+                klacht_data = {
+                    "volledige_naam": volledige_naam,
+                    "id_nummer": id_nummer if id_nummer else None,
+                    "adres": adres if adres else None,
+                    "telefoon_whatsapp": telefoon,
+                    "email": email if email else None,
+                    "klachtensoort": klachtensoort if klachtensoort != "Selecteer..." else "Overig",
+                    "omschrijving": omschrijving,
+                    "gewenste_oplossing": oplossing if oplossing else None,
+                    "status": "Nieuw",
+                    "bijlagen": { "urls": bijlagen_urls }  # Wordt netjes opgeslagen in je json kolom
+                }
                 
                 try:
-                    # Uploaden naar de bucket 'klachten-bijlagen'
-                    # Zorg ervoor dat je deze bucket al hebt aangemaakt in Supabase Storage!
-                    supabase.storage.from_('klachten-bijlagen').upload(
-                        path=unieke_bestandsnaam,
-                        file=file.getvalue(),
-                        file_options={"content-type": file.type}
-                    )
+                    response = supabase.table("klachten").insert(klacht_data).execute()
                     
-                    # Haal de openbare URL op
-                    url_res = supabase.storage.from_('klachten-bijlagen').get_public_url(unieke_bestandsnaam)
-                    bijlagen_urls.append(url_res)
-                    
+                    if response.data:
+                        st.success("🎉 Uw klacht is succesvol ontvangen en opgeslagen!")
+                    else:
+                        st.error("Er ging iets mis bij het opslaan in de database.")
                 except Exception as e:
-                    st.error(f"Fout bij het uploaden van {file.name}: {e}")
-                    
-        # 2. Data klaarmaken voor de database
-        klacht_data = {
-            "telefoon_nummer": telefoon,
-            "email": email if email else None,
-            "type_klacht": type_klacht,
-            "omschrijving": omschrijving,
-            "gewenste_oplossing": oplossing if oplossing else None,
-            "status": "Nieuw",         # Dit vult automatisch je status kolom
-            "bijlagen": { "urls": bijlagen_urls }  # Wordt als JSON object opgeslagen: {"urls": ["link1", "link2"]}
-        }
-        
-        # 3. Insert uitvoeren in de Supabase tabel
-        try:
-            response = supabase.table("klachten").insert(klacht_data).execute()
-            
-            if response.data:
-                st.success("🎉 Uw klacht is succesvol ontvangen en opgeslagen!")
-                # Optioneel: st.rerun() om het formulier leeg te maken
-            else:
-                st.error("Er ging iets mis bij het opslaan van de gegevens.")
-        except Exception as e:
-            st.error(f"Database fout: {e}")
-            
-    else:
-        st.warning("Vul alstublieft de verplichte velden in (Telefoonnummer en Korte omschrijving).")
+                    st.error(f"Database fout: {e}")
+        else:
+            st.warning("Vul alstublieft de verplichte velden in: Naam, Telefoonnummer en Omschrijving.")
+
+elif page == "🔒 Medewerkers Dashboard":
+    st.title("🔒 Medewerkers Dashboard")
+    st.info("Dit gedeelte is klaar om in de volgende stap ingericht te worden.")
