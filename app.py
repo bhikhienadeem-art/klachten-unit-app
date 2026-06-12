@@ -9,24 +9,13 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- STYLING (Blauwe zijbalk + Blauwe header boven) ---
+# --- STYLING ---
 st.markdown("""
     <style>
-    /* Blauwe zijbalk */
-    [data-testid="stSidebar"] {
-        background-color: #004a99;
-    }
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    /* Blauwe bovenbalk (Header) */
-    header[data-testid="stHeader"] {
-        background-color: #004a99;
-    }
-    .title-style {
-        color: #004a99;
-        font-weight: bold;
-    }
+    [data-testid="stSidebar"] { background-color: #004a99; }
+    [data-testid="stSidebar"] * { color: white !important; }
+    header[data-testid="stHeader"] { background-color: #004a99; }
+    .title-style { color: #004a99; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -78,7 +67,6 @@ if st.session_state.logged_in:
     st.title("Dashboard")
     st.write("Welkom in het beheersysteem.")
 else:
-    # Hier is de header die je bedoelde
     st.markdown("<h1 class='title-style'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
     st.write("Dien hieronder je klacht in:")
     
@@ -101,5 +89,4 @@ else:
                     "onderwerp": onderwerp, "omschrijving": omschrijving, "status": "Nieuw"
                 }).execute()
                 st.success("Klacht succesvol verstuurd!")
-            else:
-                st.error("Vul alstublieft alle velden in.")
+            else: st.error("Vul alstublieft alle velden in.")
