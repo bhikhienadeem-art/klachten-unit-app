@@ -1,125 +1,77 @@
 import streamlit as st
-import requests
-import pandas as pd
+import uuid
 
-# 1. Pagina-instellingen
-st.set_page_config(
-    page_title="Klachten Unit - Commissariaat Wanica Centrum",
-    page_icon="📋",
-    layout="wide"
+# --- BESTAANDE VELDEN ---
+telefoon = st.text_input("Telefoon- / WhatsApp-nummer")
+email = st.text_input("E-mailadres (Optioneel)")
+
+# Verondersteld dat je dit al had voor het type klacht
+type_klacht = st.selectbox("Wat voor soort klacht is het?", ["Selecteer...", "Infrastructuur", "Milieu", "Overig"]) 
+omschrijving = st.text_area("Korte omschrijving van de klacht")
+
+# --- NIEUWE VELDEN ---
+oplossing = st.text_area("Wat ziet u zelf als de gewenste oplossing? (Optioneel)")
+
+# File uploader voor foto's en documenten
+uploaded_files = st.file_uploader(
+    "Bijlagen toevoegen (Foto's of documenten)", 
+    type=["png", "jpg", "jpeg", "pdf", "docx"], 
+    accept_multiple_files=True
 )
 
-# 2. Haal de verbindingstokens op en repareer eventuele fouten in de URL
-try:
-    ruwe_url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
-    # Als de URL per ongeluk al /rest/v1 bevat, halen we dat weg
-    if "/rest/v1" in ruwe_url:
-        ruwe_url = ruwe_url.split("/rest/v1")[0]
-    
-    SUPABASE_URL = ruwe_url
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"].strip()
-except Exception as e:
-    st.error("Secrets niet gevonden of incompleet in Streamlit Cloud Settings.")
-    st.stop()
+st.markdown("---")
 
-# 3. Navigatie via de zijbalk (Sidebar)
-st.sidebar.title("Navigatie")
-pagina = st.sidebar.radio("Ga naar:", ["📋 Klacht Indienen", "🔒 Medewerkers Dashboard"])
-
-# ==============================================================================
-# PAGINA 1: KLACHT INDIENEN (BURGER)
-# ==============================================================================
-if pagina == "📋 Klacht Indienen":
-    st.title("📋 Klachten Unit Wanica Centrum")
-    st.write("Vul het formulier in om uw klacht officieel in te dienen.")
-    st.markdown("---")
-
-    # Formuliervelden gebaseerd op jouw database
-    st.subheader("👤 Gegevens van de Melder")
-    volledige_naam = st.text_input("Volledige Naam", placeholder="Voor- en achternaam")
-    id_nummer = st.text_input("ID-Nummer", placeholder="Bijv. FI000000M")
-    adres = st.text_input("Adres / Woonomgeving", placeholder="Straatnaam en ressort")
-    telefoon_whatsapp = st.text_input("Telefoon- / WhatsApp-nummer", placeholder="Bijv. +597 8xxxxxx")
-    email = st.text_input("E-mailadres (Optioneel)", placeholder="Bijv. naam@email.com")
-
-    st.markdown("---")
-
-    st.subheader("📝 Details van de Klacht")
-    klachtensoort = st.text_input("Wat voor soort klacht is het?", placeholder="Bijv. Wegen, Vuilophaal, Wateroverlast")
-    omschrijving = st.text_area("Korte omschrijving van de klacht", placeholder="Beschrijf hier het probleem...")
-
-    st.markdown("---")
-
-    if st.button("Klacht Officieel Indienen", type="primary"):
-        if not volledige_naam.strip() or not klachtensoort.strip() or not omschrijving.strip():
-            st.warning("Vul alstublieft de verplichte velden in (Naam, Klachtensoort en Omschrijving).")
-        else:
-            with st.spinner("Verbinding maken met de database..."):
+# --- VERWERKINGS LOGICA ---
+if st.button("Klacht Officieel Indienen", type="primary"):
+    if telefoon and omschrijving:  # Basis validatie
+        
+        bijlagen_urls = []
+        
+        # 1. Bestanden uploaden naar Supabase Storage (als er bestanden zijn geselecteerd)
+        if uploaded_files:
+            for file in uploaded_files:
+                # Unieke naam genereren om overschrijven in de storage bucket te voorkomen
+                ext = file.name.split(".")[-1]
+                unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                 
-                # Datapakket exact volgens jouw Supabase kolommen
-                data_pakket = {
-                    "volledige_naam": str(volledige_naam),
-                    "id_nummer": str(id_nummer),
-                    "adres": str(adres),
-                    "telefoon_whatsapp": str(telefoon_whatsapp),
-                    "email": str(email) if email.strip() else None,
-                    "klachtensoort": str(klachtensoort),
-                    "omschrijving": str(omschrijving),
-                    "status": "Nieuw",
-                    "bijlage_url": None
-                }
-
-                # HTTP Headers voor de directe REST API
-                headers = {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}",
-                    "Content-Type": "application/json",
-                    "Prefer": "return=representation"
-                }
-
-                # Bouw de URL handmatig op
-                rest_url = f"{SUPABASE_URL}/rest/v1/klachten"
-
                 try:
-                    response = requests.post(rest_url, json=data_pakket, headers=headers)
+                    # Uploaden naar de bucket 'klachten-bijlagen'
+                    # Zorg ervoor dat je deze bucket al hebt aangemaakt in Supabase Storage!
+                    supabase.storage.from_('klachten-bijlagen').upload(
+                        path=unieke_bestandsnaam,
+                        file=file.getvalue(),
+                        file_options={"content-type": file.type}
+                    )
                     
-                    if response.status_code in [200, 201]:
-                        st.success("🎉 Uw klacht is succesvol ontvangen en opgeslagen!")
-                        st.balloons()
-                    else:
-                        st.error(f"⚠️ Database weigert de opslag. Statuscode: {response.status_code}")
-                        st.write("Foutdetails van de database:")
-                        st.json(response.json())
-                except Exception as api_error:
-                    st.error("⚠️ Er kon geen verbinding worden gemaakt met het netwerk.")
-                    st.text(str(api_error))
-
-# ==============================================================================
-# PAGINA 2: MEDEWERKERS DASHBOARD
-# ==============================================================================
-elif pagina == "🔒 Medewerkers Dashboard":
-    st.title("🔒 Medewerkers Dashboard")
-    wachtwoord = st.text_input("Voer het medewerkerswachtwoord in:", type="password")
-    
-    if wachtwoord == "Wanica2026":
-        st.success("Toegang verleend!")
-        
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}"
+                    # Haal de openbare URL op
+                    url_res = supabase.storage.from_('klachten-bijlagen').get_public_url(unieke_bestandsnaam)
+                    bijlagen_urls.append(url_res)
+                    
+                except Exception as e:
+                    st.error(f"Fout bij het uploaden van {file.name}: {e}")
+                    
+        # 2. Data klaarmaken voor de database
+        klacht_data = {
+            "telefoon_nummer": telefoon,
+            "email": email if email else None,
+            "type_klacht": type_klacht,
+            "omschrijving": omschrijving,
+            "gewenste_oplossing": oplossing if oplossing else None,
+            "status": "Nieuw",         # Dit vult automatisch je status kolom
+            "bijlagen": { "urls": bijlagen_urls }  # Wordt als JSON object opgeslagen: {"urls": ["link1", "link2"]}
         }
-        rest_url = f"{SUPABASE_URL}/rest/v1/klachten?select=*"
         
+        # 3. Insert uitvoeren in de Supabase tabel
         try:
-            response = requests.get(rest_url, headers=headers)
-            if response.status_code == 200:
-                klachten_data = response.json()
-                if not klachten_data:
-                    st.info("Er zijn nog geen klachten aanwezig.")
-                else:
-                    df = pd.DataFrame(klachten_data)
-                    st.dataframe(df, use_container_width=True)
+            response = supabase.table("klachten").insert(klacht_data).execute()
+            
+            if response.data:
+                st.success("🎉 Uw klacht is succesvol ontvangen en opgeslagen!")
+                # Optioneel: st.rerun() om het formulier leeg te maken
             else:
-                st.error(f"Kon gegevens niet ophalen. Statuscode: {response.status_code}")
+                st.error("Er ging iets mis bij het opslaan van de gegevens.")
         except Exception as e:
-            st.error(f"Netwerkfout: {str(e)}")
+            st.error(f"Database fout: {e}")
+            
+    else:
+        st.warning("Vul alstublieft de verplichte velden in (Telefoonnummer en Korte omschrijving).")
