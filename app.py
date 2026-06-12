@@ -61,7 +61,7 @@ if pagina == "📋 Klacht Indienen":
                         file_bytes = bijlage.read()
                         bestandsnaam = f"klacht_{int(time.time())}_{bijlage.name}"
                         
-                        storage_res = supabase.storage.from_("klachten-bijlagen").upload(
+                        supabase.storage.from_("klachten-bijlagen").upload(
                             path=bestandsnaam,
                             file=file_bytes,
                             file_options={"content-type": bijlage.type}
@@ -69,28 +69,25 @@ if pagina == "📋 Klacht Indienen":
                         bijlage_url = supabase.storage.from_("klachten-bijlagen").get_public_url(bestandsnaam)
 
                     # Invoegen in de database
-                    supabase.table("klachten").insert({
+                    data_to_insert = {
                         "volledige_naam": volledige_naam,
                         "id_nummer": id_nummer,
                         "adres": adres,
-                        "telefoon_whatsapp": telepon_whatsapp,
+                        "telefoon_whatsapp": telefoon_whatsapp,
                         "soort_klacht": soort_klacht,
                         "omschrijving": omschrijving,
                         "bijlage_url": bijlage_url
-                    }).execute()
+                    }
+                    
+                    supabase.table("klachten").insert(data_to_insert).execute()
 
                     st.success("🎉 Uw klacht is succesvol ontvangen en geregistreerd bij het Commissariaat!")
                     st.balloons()
 
                 except Exception as error:
-                    # Veilige foutweergave die controleert of de fout een dict of object is
-                    st.error("⚠️ Er ging iets mis bij het opslaan in de database.")
-                    if hasattr(error, 'message'):
-                        st.code(error.message, language="text")
-                    elif isinstance(error, dict):
-                        st.json(error)
-                    else:
-                        st.code(str(error), language="text")
+                    st.error("⚠️ Er ging iets mis in de communicatie met de database.")
+                    # Dit dwingt Python om de ruwe foutmelding als platte tekst te dumpen zonder te crashen
+                    st.text(repr(error))
 
 # ==============================================================================
 # PAGINA 2: MEDEWERKERS DASHBOARD (BEVEILIGD)
@@ -131,6 +128,6 @@ elif pagina == "🔒 Medewerkers Dashboard":
                         mime="text/csv",
                     )
             except Exception as e:
-                st.error(f"Fout bij het laden van de gegevens: {e}")
+                st.error(f"Fout bij het laden van de gegevens: {repr(e)}")
     elif wachtwoord != "":
         st.error("Onjuist wachtwoord. Toegang geweigerd.")
