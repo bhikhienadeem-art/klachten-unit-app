@@ -57,32 +57,38 @@ if page == "📝 Klacht Indienen":
                     unieke_bestandsnaam = f"{uuid.uuid4()}.{ext}"
                     
                     try:
-                        # GEWIJZIGD: We halen de file_options weg of vereenvoudigen het.
-                        # Supabase herkent bytes uploads tegenwoordig direct prima zelf.
+                        # Haal de rauwe bytes op
+                        file_bytes = file.getvalue()
+                        
+                        # Upload direct naar de bucket
                         supabase.storage.from_('klachten-bijlagen').upload(
                             path=unieke_bestandsnaam,
-                            file=file.getvalue()
+                            file=file_bytes
                         )
                         
-                        # Publieke URL genereren
-                        url_res = supabase.storage.from_('klachten-bijlagen').get_public_url(unieke_bestandsnaam)
+                        # Publieke URL opvragen
+                        url_data = supabase.storage.from_('klachten-bijlagen').get_public_url(unieke_bestandsnaam)
                         
-                        # Soms geeft get_public_url direct een string terug, soms een object/dict afhankelijk van de SDK versie.
-                        # We zorgen hier dat we altijd de pure string-URL pakken.
-                        if isinstance(url_res, dict) and "publicUrl" in url_res:
-                            pure_url = url_res["publicUrl"]
-                        elif hasattr(url_res, "public_url"):
-                            pure_url = url_res.public_url
+                        # Veilige extractie van de URL string, ongeacht de SDK versie
+                        if isinstance(url_data, str):
+                            pure_url = url_data
+                        elif isinstance(url_data, dict) and "publicUrl" in url_data:
+                            pure_url = url_data["publicUrl"]
+                        elif hasattr(url_data, "public_url"):
+                            pure_url = url_data.public_url
                         else:
-                            pure_url = str(url_res)
+                            # Fallback: handmatig de URL opbouwen als de SDK vreemd doet
+                            supabase_url = st.secrets["SUPABASE_URL"].rstrip('/')
+                            pure_url = f"{supabase_url}/storage/v1/object/public/klachten-bijlagen/{unieke_bestandsnaam}"
                             
                         bijlagen_urls.append(pure_url)
                         
-                    except Exception as e:
-                        st.error(f"Fout bij het uploaden van {file.name}: {e}")
+                    except Exception as upload_error:
+                        # Converteer de error expliciet naar string om '.text' issues te omzeilen
+                        st.error(f"Fout bij het uploaden van {file.name}: {str(upload_error)}")
                         upload_succesvol = False
             
-            # Als de uploads goed gingen (of er waren er geen), opslaan in de database
+            # Alleen opslaan als de uploads zijn geslaagd
             if upload_succesvol:
                 klacht_data = {
                     "volledige_naam": volledige_naam,
@@ -103,9 +109,9 @@ if page == "📝 Klacht Indienen":
                     if response.data:
                         st.success("🎉 Uw klacht is succesvol ontvangen en opgeslagen!")
                     else:
-                        st.error("Er ging iets mis bij het opslaan in de database.")
-                except Exception as e:
-                    st.error(f"Database fout: {e}")
+                        st.error("Er ging iets mis bij het opslaan van de gegevens.")
+                except Exception as db_error:
+                    st.error(f"Database fout: {str(db_error)}")
         else:
             st.warning("Vul alstublieft de verplichte velden in: Naam, Telefoonnummer en Omschrijving.")
 
