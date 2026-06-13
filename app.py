@@ -71,26 +71,49 @@ with st.sidebar:
 # --- FORMULIER & DASHBOARD ---
 if st.session_state.logged_in:
     st.title("📊 Dashboard Ingekomen Klachten")
-    klachten_data = supabase.table("klachten").select("*").execute().data
     
-    for k in klachten_data:
-        with st.expander(f"Klacht van: {k['volledige_naam']} ({k['klachtensoort']})"):
-            st.write(f"**Adres:** {k['adres']} | **ID:** {k['id_nummer']} | **Tel:** {k['telefoon_whatsapp']}")
-            st.write(f"**Email:** {k['email']}")
-            st.write(f"**Omschrijving:** {k['omschrijving']}")
-            if k['bijlage_url']: st.markdown(f"[Bekijk bijlage]({k['bijlage_url']})")
-            
-            nieuwe_status = st.selectbox(
-                "Status wijzigen", 
-                ["Nieuw", "Door gestuurd naar de desbetreffende afdeling", "In behandeling", "Afgehandeld"],
-                index=["Nieuw", "Door gestuurd naar de desbetreffende afdeling", "In behandeling", "Afgehandeld"].index(k['status'])
-            )
-            
-            if st.button(f"Update status voor {k['volledige_naam']}", key=k['id']):
-                supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
-                st.success("Status bijgewerkt!")
-                st.rerun()
+    try:
+        # Data ophalen uit de database
+        response = supabase.table("klachten").select("*").execute()
+        klachten_data = response.data
+        
+        if not klachten_data:
+            st.info("Er zijn op dit moment geen nieuwe klachten binnengekomen.")
+        else:
+            for k in klachten_data:
+                # Veilig ophalen van data met .get() om crashes te voorkomen
+                status = k.get('status', 'Nieuw')
+                naam = k.get('volledige_naam', 'Anoniem')
+                
+                with st.expander(f"Klacht van: {naam} ({k.get('klachtensoort', 'Onbekend')})"):
+                    st.write(f"**Adres:** {k.get('adres', '-')} | **ID:** {k.get('id_nummer', '-')} | **Tel:** {k.get('telefoon_whatsapp', '-')}")
+                    st.write(f"**Email:** {k.get('email', '-')}")
+                    st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                    
+                    if k.get('bijlage_url'):
+                        st.markdown(f"[Bekijk bijlage]({k['bijlage_url']})")
+                    
+                    # Status dropdown met unieke key
+                    opties = ["Nieuw", "Door gestuurd naar de desbetreffende afdeling", "In behandeling", "Afgehandeld"]
+                    huidige_index = opties.index(status) if status in opties else 0
+                    
+                    nieuwe_status = st.selectbox(
+                        "Status wijzigen", 
+                        opties,
+                        index=huidige_index,
+                        key=f"select_{k['id']}"
+                    )
+                    
+                    # Update knop met unieke key
+                    if st.button(f"Update status voor {naam}", key=f"btn_{k['id']}"):
+                        supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                        st.success("Status bijgewerkt!")
+                        st.rerun()
+    except Exception as e:
+        st.error(f"Fout bij ophalen van data: {e}")
+        
 else:
+    # Dit is het gedeelte voor normale gebruikers (het formulier)
     st.title("Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
