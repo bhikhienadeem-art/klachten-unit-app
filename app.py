@@ -34,6 +34,12 @@ if st.session_state.logged_in and st.session_state.rol == 'admin':
                 st.write(f"**Adres:** {k.get('adres', '-')} | **Email:** {k.get('email', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                 
+                # --- INTERNE NOTITIE ---
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+                if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
+                    supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
+                    st.success("Notitie opgeslagen")
+                
                 # Status update
                 nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
                                              index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
