@@ -5,7 +5,7 @@ from supabase import create_client
 
 # --- CONFIGURATIE ---
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjI4MDgsImV4cCI6MjA5NjczODgwOH0.JxBByUdNydkVc4FQ0Eg5fvO3ERi13LvJHKHuJPH83uk" 
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjI4MDgsImV4cCI6MjA5NjczODgwOH0.JxBByUdNydkVc4FQ0Eg5fvO3ERi13LvJHKHuJPH83uk" 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
@@ -13,12 +13,10 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 # --- CSS & HEADER ---
 st.markdown("""
     <style>
-    /* Zorgt ervoor dat de header de volledige breedte pakt en groter is */
     .header-bar { 
         background-color: #004a99; 
         color: white; 
         padding: 40px 20px; 
-        border-radius: 0; 
         text-align: center; 
         width: 100vw;
         margin-left: calc(-50vw + 50%);
@@ -32,31 +30,51 @@ st.markdown("""
 
 st.markdown("""
     <div class="header-bar">
-        <div class="main-title">Welkom op de pagina van de Klachtenunit van het Commissariaat Wanica Centrum</div>
-        <div class="sub-text">
-            Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen 
-            en, indien gewenst, een mogelijke oplossing voorstellen.
-        </div>
+        <div class="main-title">Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum</div>
+        <div class="sub-text">Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen en, indien gewenst, een mogelijke oplossing voorstellen.</div>
         <div class="contact-line">
             📍 Tawajariweg #20 | 📞 366660 / 366929 | 💬 8921062 | 📧 klachtenunitwanicacentrum@gmail.com
         </div>
     </div>
 """, unsafe_allow_html=True)
-# --- LOGIN ---
-def check_login(username, password):
-    pw_hash = hashlib.sha256(password.encode()).hexdigest()
-    try:
-        response = supabase.table("gebruikers").select("*").eq("username", username).execute()
-        return response.data[0] if (response.data and response.data[0]['password_hash'] == pw_hash) else None
-    except: return None
 
+# --- LOGIN & SIDEBAR ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
+
+with st.sidebar:
+    st.header("🔑 Medewerkers Inlog")
+    user = st.text_input("Gebruikersnaam")
+    pw = st.text_input("Wachtwoord", type="password")
+    if st.button("Inloggen"):
+        # Hier kan je eventueel je check_login functie aanroepen
+        if user == "admin" and pw == "admin123": 
+            st.session_state.logged_in = True
+            st.rerun()
+        else:
+            st.error("Ongeldige gegevens")
 
 # --- FORMULIER & DASHBOARD ---
 if st.session_state.logged_in:
-    st.title("DASHBOARD")
-    klachten = supabase.table("klachten").select("*").execute().data
-    st.write(klachten)
+    st.title("📊 Dashboard Ingekomen Klachten")
+    klachten_data = supabase.table("klachten").select("*").execute().data
+    
+    for k in klachten_data:
+        with st.expander(f"Klacht van: {k['volledige_naam']} ({k['klachtensoort']})"):
+            st.write(f"**Adres:** {k['adres']} | **ID:** {k['id_nummer']} | **Tel:** {k['telefoon_whatsapp']}")
+            st.write(f"**Email:** {k['email']}")
+            st.write(f"**Omschrijving:** {k['omschrijving']}")
+            if k['bijlage_url']: st.markdown(f"[Bekijk bijlage]({k['bijlage_url']})")
+            
+            nieuwe_status = st.selectbox(
+                "Status wijzigen", 
+                ["Nieuw", "Door gestuurd naar de desbetreffende afdeling", "In behandeling", "Afgehandeld"],
+                index=["Nieuw", "Door gestuurd naar de desbetreffende afdeling", "In behandeling", "Afgehandeld"].index(k['status'])
+            )
+            
+            if st.button(f"Update status voor {k['volledige_naam']}", key=k['id']):
+                supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                st.success("Status bijgewerkt!")
+                st.rerun()
 else:
     st.title("Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
@@ -70,13 +88,12 @@ else:
             telefoon = st.text_input("Telefoon/Whatsapp")
             soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         
-        omschrijving = st.text_area("Omschrijving/Eventueel Oplossing voorstel")
+        omschrijving = st.text_area("Omschrijving")
         bestand = st.file_uploader("Voeg bijlage toe (foto/PDF)", type=['png', 'jpg', 'pdf'])
         
         if st.form_submit_button("Verstuur klacht"):
             url = None
             fout = False
-            
             if bestand:
                 try:
                     bestandsnaam = f"{uuid.uuid4()}_{bestand.name}"
@@ -88,15 +105,9 @@ else:
             
             if not fout:
                 data = {
-                    "volledige_naam": naam,
-                    "id_nummer": id_nr,
-                    "adres": adres,
-                    "telefoon_whatsapp": telefoon,
-                    "email": email,
-                    "klachtensoort": soort,
-                    "omschrijving": omschrijving,
-                    "bijlage_url": url,
-                    "status": "Nieuw"
+                    "volledige_naam": naam, "id_nummer": id_nr, "adres": adres,
+                    "telefoon_whatsapp": telefoon, "email": email, "klachtensoort": soort,
+                    "omschrijving": omschrijving, "bijlage_url": url, "status": "Nieuw"
                 }
                 try:
                     supabase.table("klachten").insert(data).execute()
