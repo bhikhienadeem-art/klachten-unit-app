@@ -27,7 +27,7 @@ st.markdown("""
     <div class="header-bar">
         <h2 style="color: white; margin: 0;">Klachten Unit Wanica Centrum</h2>
         <p style="margin: 5px; font-size: 14px;">
-            📍 Adres: Commissariaat Wanica, Lelydorp | 📞 Tel: +597 123456 | 💬 WhatsApp: +597 8889999 | 📧 E-mail: info@wanica-centrum.sr
+            📍 Adres: Tawajariweg #20, Lelydorp | 📞 Tel: +597 366660/+597 366929 | 💬 WhatsApp: +597 8921062 | 📧 E-mail: klachtenunitwanicacentrum@gmail.com
         </p>
     </div>
 """, unsafe_allow_html=True)
@@ -100,9 +100,9 @@ else:
             naam = st.text_input("Volledige naam")
             email = st.text_input("E-mailadres")
         with col2:
-            telefoon = st.text_input("Telefoonnummer")
+            telefoon = st.text_input("Telefoon/Whatsapp Nummer")
             onderwerp = st.selectbox("Onderwerp", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        omschrijving = st.text_area("Omschrijving")
+        omschrijving = st.text_area("Omschrijving/Eventueel oplossing")
         bestand = st.file_uploader("Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
         
         if st.form_submit_button("Verstuur klacht"):
