@@ -64,12 +64,35 @@ if st.session_state.logged_in:
                     st.rerun()
     except Exception as e: st.error(f"Fout bij ophalen: {e}")
 else:
+    # Dit is het gedeelte voor normale gebruikers
     st.title("Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
-        naam = st.text_input("Volledige naam")
+        col1, col2 = st.columns(2)
+        with col1:
+            naam = st.text_input("Volledige naam")
+            id_nr = st.text_input("ID Nummer")
+            email = st.text_input("E-mailadres")
+        with col2:
+            adres = st.text_input("Adres")
+            telefoon = st.text_input("Telefoon/Whatsapp")
+            soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        
         omschrijving = st.text_area("Omschrijving")
+        
         if st.form_submit_button("Verstuur klacht"):
             try:
-                supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
-                st.success("Uw klacht is succesvol verzonden naar het Commissariaat.")
-            except Exception as e: st.error(f"Database fout: {e}")
+                # Zorg dat deze keys overeenkomen met je databasekolommen
+                data = {
+                    "volledige_naam": naam, 
+                    "id_nummer": id_nr, 
+                    "adres": adres,
+                    "telefoon_whatsapp": telefoon, 
+                    "email": email, 
+                    "klachtensoort": soort,
+                    "omschrijving": omschrijving, 
+                    "status": "Nieuw"
+                }
+                supabase.table("klachten").insert(data).execute()
+                st.success("Uw klacht is succesvol verzonden!")
+            except Exception as e: 
+                st.error(f"Database fout: {e}")
