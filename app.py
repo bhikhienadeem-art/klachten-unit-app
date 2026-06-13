@@ -9,7 +9,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- CSS STYLING (HERSTELD) ---
+# --- CSS STYLING ---
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { padding-top: 0rem; }
@@ -24,7 +24,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER (HERSTELD) ---
+# --- HEADER ---
 st.markdown("""
     <div class="header-bar">
         <div class="main-title">Klachtenunit Commissariaat Wanica Centrum</div>
@@ -54,7 +54,6 @@ with st.sidebar:
 if st.session_state.logged_in:
     if st.session_state.rol == 'admin':
         tab1, tab2 = st.tabs(["📊 Dashboard", "⚙️ Medewerker Beheer"])
-        
         with tab1:
             st.title("Dashboard")
             response = supabase.table("klachten").select("*").execute()
@@ -62,7 +61,6 @@ if st.session_state.logged_in:
                 with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')}"):
                     st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                     st.write(f"**Status:** {k.get('status', 'Nieuw')}")
-            
         with tab2:
             st.subheader("Nieuwe Medewerker Toevoegen")
             with st.form("add_user_form"):
@@ -91,18 +89,27 @@ else:
         with col1:
             naam = st.text_input("Volledige naam")
             id_nr = st.text_input("ID Nummer")
+            email = st.text_input("E-mailadres") # E-mail weer terug
         with col2:
             adres = st.text_input("Adres")
+            telefoon = st.text_input("Telefoon/Whatsapp") # Telefoon ook toegevoegd
             soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        
         omschrijving = st.text_area("Omschrijving")
         uploaded_file = st.file_uploader("Voeg bijlage toe", type=['png', 'jpg', 'pdf'])
+        
         if st.form_submit_button("Verstuur klacht"):
             try:
                 file_path = None
                 if uploaded_file:
                     file_path = f"bijlagen/{uuid.uuid4()}_{uploaded_file.name}"
                     supabase.storage.from_("klachten-bijlagen").upload(file_path, uploaded_file.getvalue())
-                data = {"volledige_naam": naam, "id_nummer": id_nr, "adres": adres, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw", "bijlagen": file_path}
+                
+                data = {
+                    "volledige_naam": naam, "id_nummer": id_nr, "email": email, "adres": adres, 
+                    "telefoon_whatsapp": telefoon, "klachtensoort": soort, "omschrijving": omschrijving, 
+                    "status": "Nieuw", "bijlagen": file_path
+                }
                 supabase.table("klachten").insert(data).execute()
                 st.success("Verzonden!")
             except Exception as e:
