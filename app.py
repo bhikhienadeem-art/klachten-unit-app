@@ -3,25 +3,20 @@ import hashlib
 from supabase import create_client
 
 # --- CONFIGURATIE ---
+# Controleer of deze URL en KEY exact overeenkomen met je Supabase dashboard (Project Settings > API)
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "sb_publishable_XnTLlOfaR0bfZ_gFXlOnuw_zxOi87kb"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- STYLING (Leesbaarheid & Blauwe thema) ---
+# --- STYLING ---
 st.markdown("""
     <style>
-    /* Blauwe zijbalk */
     [data-testid="stSidebar"] { background-color: #004a99; }
     [data-testid="stSidebar"] * { color: white !important; }
-    
-    /* Zorg dat tekst in invoervelden in de zijbalk zwart blijft (tegen witte achtergrond) */
-    [data-testid="stSidebar"] input { color: black !important; }
-    
-    /* Blauwe header bovenaan */
+    [data-testid="stSidebar"] input { color: black !important; } /* Zorgt dat tekst in invoervelden zwart is */
     header[data-testid="stHeader"] { background-color: #004a99; }
-    
     .title-style { color: #004a99; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
@@ -33,11 +28,14 @@ def hash_password(password):
 def check_login(username, password):
     pw_hash = hash_password(password)
     try:
-        # Zoek gebruiker op basis van username en de gehashte wachtwoord
-        response = supabase.table("gebruikers").select("*").eq("username", username).eq("password_hash", pw_hash).execute()
-        if response.data: return response.data[0]
+        # Zoek gebruiker op username
+        response = supabase.table("gebruikers").select("*").eq("username", username).execute()
+        if response.data:
+            stored_hash = response.data[0]['password_hash']
+            if stored_hash == pw_hash:
+                return response.data[0]
     except Exception as e:
-        st.error(f"Fout: {e}")
+        st.error(f"Database fout: {e}")
     return None
 
 # --- STATE ---
@@ -76,6 +74,7 @@ with st.sidebar:
 if st.session_state.logged_in:
     st.title("Dashboard")
     st.write("Welkom in het beheersysteem.")
+    # Hier kun je later de klachtenlijst ophalen
 else:
     st.markdown("<h1 class='title-style'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
     st.write("Dien hieronder je klacht in:")
