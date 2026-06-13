@@ -57,33 +57,35 @@ if st.session_state.logged_in:
     else:
         st.title("Dashboard (Medewerker)")
 else:
-    # --- PUBLIEK FORMULIER MET UPLOAD ---
+   # --- PUBLIEK FORMULIER ---
     st.title("Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
             naam = st.text_input("Volledige naam")
+            id_nr = st.text_input("ID Nummer") # Nieuw veld
             email = st.text_input("E-mailadres")
         with col2:
+            adres = st.text_input("Woonadres") # Nieuw veld
             telefoon = st.text_input("Telefoon/Whatsapp")
             soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         
         omschrijving = st.text_area("Omschrijving")
-        uploaded_file = st.file_uploader("Voeg bijlage toe", type=['png', 'jpg', 'pdf'])
         
         if st.form_submit_button("Verstuur klacht"):
             try:
-                # Bestand upload logica
-                file_path = None
-                if uploaded_file:
-                    file_path = f"bijlagen/{uuid.uuid4()}_{uploaded_file.name}"
-                    supabase.storage.from_("klachten-bijlagen").upload(file_path, uploaded_file.getvalue())
-                
+                # Zorg dat je tabel 'klachten' ook de kolommen 'id_nummer' en 'adres' heeft!
                 data = {
-                    "volledige_naam": naam, "email": email, "telefoon_whatsapp": telefoon, 
-                    "klachtensoort": soort, "omschrijving": omschrijving, "bijlagen": file_path
+                    "volledige_naam": naam,
+                    "id_nummer": id_nr, 
+                    "email": email,
+                    "adres": adres,
+                    "telefoon_whatsapp": telefoon,
+                    "klachtensoort": soort,
+                    "omschrijving": omschrijving,
+                    "status": "Nieuw"
                 }
                 supabase.table("klachten").insert(data).execute()
-                st.success("Verzonden!")
+                st.success("Klacht succesvol verzonden!")
             except Exception as e:
                 st.error(f"Fout: {e}")
