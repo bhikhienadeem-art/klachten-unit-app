@@ -13,28 +13,35 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 # --- CSS & HEADER ---
 st.markdown("""
     <style>
+    /* Zorgt ervoor dat de header de volledige breedte pakt en groter is */
     .header-bar { 
         background-color: #004a99; 
         color: white; 
-        padding: 15px; 
-        border-radius: 5px; 
+        padding: 40px 20px; 
+        border-radius: 0; 
         text-align: center; 
-        margin-bottom: 20px; 
+        width: 100vw;
+        margin-left: calc(-50vw + 50%);
+        margin-bottom: 30px;
     }
-    .contact-line { font-size: 13px; margin-top: 5px; color: white; }
+    .main-title { font-size: 32px; font-weight: bold; margin-bottom: 15px; }
+    .sub-text { font-size: 18px; line-height: 1.5; max-width: 800px; margin: 0 auto; }
+    .contact-line { font-size: 14px; margin-top: 20px; color: #e0e0e0; }
     </style>
 """, unsafe_allow_html=True)
 
-# Deze header bevat zowel de titel als de contactgegevens en wordt maar één keer getoond
 st.markdown("""
     <div class="header-bar">
-        <h2 style="color: white; margin: 0;">Klachten Unit Wanica Centrum</h2>
+        <div class="main-title">Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum</div>
+        <div class="sub-text">
+            Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen 
+            en, indien gewenst, een mogelijke oplossing voorstellen.
+        </div>
         <div class="contact-line">
             📍 Tawajariweg #20 | 📞 366660 / 366929 | 💬 8921062 | 📧 klachtenunitwanicacentrum@gmail.com
         </div>
     </div>
 """, unsafe_allow_html=True)
-
 # --- LOGIN ---
 def check_login(username, password):
     pw_hash = hashlib.sha256(password.encode()).hexdigest()
