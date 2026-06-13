@@ -13,6 +13,12 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 # --- CSS & HEADER ---
 st.markdown("""
     <style>
+    /* Verwijdert de standaard witruimte bovenin Streamlit */
+    [data-testid="stAppViewContainer"] {
+        padding-top: 0rem;
+    }
+    
+    /* Header balk die strak tegen de bovenrand aan staat */
     .header-bar { 
         background-color: #004a99; 
         color: white; 
@@ -21,22 +27,20 @@ st.markdown("""
         width: 100vw;
         margin-left: calc(-50vw + 50%);
         margin-bottom: 30px;
+        position: relative;
+        z-index: 100;
     }
     .main-title { font-size: 32px; font-weight: bold; margin-bottom: 15px; }
     .sub-text { font-size: 18px; line-height: 1.5; max-width: 800px; margin: 0 auto; }
     .contact-line { font-size: 14px; margin-top: 20px; color: #e0e0e0; }
     
-    /* Blauwe zijbalk aanpassing */
+    /* Blauwe zijbalk strak tegen de bovenrand */
     [data-testid="stSidebar"] {
         background-color: #004a99 !important;
+        margin-top: 0px !important;
     }
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    [data-testid="stSidebar"] input {
-        background-color: white !important;
-        color: black !important;
-    }
+    [data-testid="stSidebar"] * { color: white !important; }
+    [data-testid="stSidebar"] input { background-color: white !important; color: black !important; }
     </style>
 """, unsafe_allow_html=True)
 
