@@ -17,7 +17,7 @@ st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
         <div class="contact-info">
-            📍 <b>Adres:</b> Indira Gandhiweg | 📞 <b>Tel:</b> (+597) 584xxx | 💬 <b>WhatsApp:</b> (+597) 8xxx-xxx | ✉️ <b>E-mail:</b> klachten.wanica@gov.sr
+            📍 <b>Adres:</b> Tawajarieweg 20 | 📞 <b>Tel:</b> (+597)366660/(+597)366929 | 💬 <b>WhatsApp:</b> (+597) 8921062 | ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com
         </div>
     </div>
 """, unsafe_allow_html=True)
