@@ -3,7 +3,6 @@ import hashlib
 from supabase import create_client
 
 # --- CONFIGURATIE ---
-# Controleer of deze URL en KEY exact overeenkomen met je Supabase dashboard (Project Settings > API)
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "sb_publishable_XnTLlOfaR0bfZ_gFXlOnuw_zxOi87kb"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -15,7 +14,7 @@ st.markdown("""
     <style>
     [data-testid="stSidebar"] { background-color: #004a99; }
     [data-testid="stSidebar"] * { color: white !important; }
-    [data-testid="stSidebar"] input { color: black !important; } /* Zorgt dat tekst in invoervelden zwart is */
+    [data-testid="stSidebar"] input { color: black !important; }
     header[data-testid="stHeader"] { background-color: #004a99; }
     .title-style { color: #004a99; font-weight: bold; }
     </style>
@@ -26,34 +25,22 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def check_login(username, password):
-    # Hash het wachtwoord dat de gebruiker intypt
     pw_hash = hash_password(password)
-    
     try:
-        # Zoek in de database naar deze specifieke username
         response = supabase.table("gebruikers").select("*").eq("username", username).execute()
-        
         if response.data:
-            db_user = response.data[0]
-            # Vergelijk de hash uit de database met de hash die we net hebben gemaakt
-            if db_user['password_hash'] == pw_hash:
-                return db_user
-            else:
-                st.warning(f"Debug: Hash matcht niet!") # Dit zie je als het wachtwoord fout is
-                return None
-        else:
-            st.warning("Debug: Gebruiker niet gevonden!")
-            return None
+            if response.data[0]['password_hash'] == pw_hash:
+                return response.data[0]
     except Exception as e:
-        st.error(f"Fout bij database: {e}")
-        return None
+        st.error(f"Fout: {e}")
+    return None
 
 # --- STATE ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_data = None
 
-# --- ZIJKANT (SIDEBAR) ---
+# --- ZIJKANT ---
 with st.sidebar:
     st.markdown("### 🔐 Medewerker Login")
     if not st.session_state.logged_in:
@@ -72,23 +59,34 @@ with st.sidebar:
         if st.button("Log uit"):
             st.session_state.logged_in = False
             st.rerun()
-    
-    st.markdown("---")
-    st.markdown("### 📞 Contactgegevens")
-    st.write("📍 **Adres:** Wanica Centrum")
-    st.write("📱 **WhatsApp:** +597 8123456")
-    st.write("☎️ **Telefoon:** 597 123456")
-    st.write("📧 **E-mail:** info@wanica.sr")
 
 # --- HOOFDPROGRAMMA ---
 if st.session_state.logged_in:
-    st.title("Dashboard")
-    st.write("Welkom in het beheersysteem.")
-    # Hier kun je later de klachtenlijst ophalen
+    st.title("Dashboard: Binnengekomen Klachten")
+    
+    # Haal klachten op
+    try:
+        response = supabase.table("klachten").select("*").order("id", desc=True).execute()
+        klachten = response.data
+        
+        if klachten:
+            for k in klachten:
+                with st.expander(f"Klacht #{k['id']} - {k['onderwerp']} ({k['status']})"):
+                    st.write(f"**Naam:** {k['volledige_naam']}")
+                    st.write(f"**E-mail:** {k['email']}")
+                    st.write(f"**Omschrijving:** {k['omschrijving']}")
+                    
+                    if k['status'] != "Afgehandeld":
+                        if st.button(f"Markeer als afgehandeld", key=f"btn_{k['id']}"):
+                            supabase.table("klachten").update({"status": "Afgehandeld"}).eq("id", k['id']).execute()
+                            st.rerun()
+        else:
+            st.info("Nog geen klachten ontvangen.")
+    except Exception as e:
+        st.error(f"Fout bij laden: {e}")
+
 else:
     st.markdown("<h1 class='title-style'>Welkom bij de Klachten Unit Wanica Centrum</h1>", unsafe_allow_html=True)
-    st.write("Dien hieronder je klacht in:")
-    
     with st.form("klacht_form"):
         col1, col2 = st.columns(2)
         with col1:
@@ -97,16 +95,11 @@ else:
         with col2:
             telefoon = st.text_input("Telefoonnummer")
             onderwerp = st.selectbox("Onderwerp", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        
-        omschrijving = st.text_area("Omschrijving van je klacht")
-        submit = st.form_submit_button("Verstuur klacht")
-        
-        if submit:
+        omschrijving = st.text_area("Omschrijving")
+        if st.form_submit_button("Verstuur klacht"):
             if naam and omschrijving:
                 supabase.table("klachten").insert({
                     "volledige_naam": naam, "email": email, "telefoon": telefoon, 
                     "onderwerp": onderwerp, "omschrijving": omschrijving, "status": "Nieuw"
                 }).execute()
-                st.success("Klacht succesvol verstuurd!")
-            else:
-                st.error("Vul alstublieft ten minste je naam en omschrijving in.")
+                st.success("Verstuurd!")
