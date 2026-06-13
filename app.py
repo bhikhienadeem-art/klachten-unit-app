@@ -29,44 +29,41 @@ if st.session_state.logged_in and st.session_state.rol == 'admin':
     try:
         response = supabase.table("klachten").select("*").execute()
         klachten = response.data
+        
         for k in klachten:
             with st.expander(f"Klacht van: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
-                st.write(f"**Adres:** {k.get('adres', '-')} | **Tel:** {k.get('telefoon_whatsapp', '-')}")
+                # 1. Alle gegevens tonen
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write(f"**ID Nummer:** {k.get('id_nummer', '-')}")
+                    st.write(f"**E-mail:** {k.get('email', '-')}")
+                with col2:
+                    st.write(f"**Telefoon:** {k.get('telefoon_whatsapp', '-')}")
+                    st.write(f"**Adres:** {k.get('adres', '-')}")
+                st.write(f"**Soort klacht:** {k.get('klachtensoort', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                 
-                # Status update
+                st.divider()
+
+                # 2. Status wijzigen
                 nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
+                                             index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
                                              key=f"status_{k['id']}")
-                if st.button("Update Status", key=f"btn_{k['id']}"):
+                if st.button("Update Status", key=f"upd_{k['id']}"):
                     supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
                     st.rerun()
-    except Exception:
-        st.error("Kon klachten niet laden.")
 
-# --- FORMULIER (Altijd zichtbaar) ---
-st.divider()
-st.title("Klacht indienen")
-with st.form("klacht_form", clear_on_submit=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        naam = st.text_input("Volledige naam")
-        id_nr = st.text_input("ID Nummer")
-        email = st.text_input("E-mailadres")
-    with col2:
-        adres = st.text_input("Woonadres")
-        telefoon = st.text_input("Telefoon/Whatsapp")
-        soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-    
-    omschrijving = st.text_area("Omschrijving")
-    
-    if st.form_submit_button("Verstuur klacht"):
-        try:
-            data = {
-                "volledige_naam": naam, "id_nummer": id_nr, "email": email,
-                "adres": adres, "telefoon_whatsapp": telefoon,
-                "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"
-            }
-            supabase.table("klachten").insert(data).execute()
-            st.success("Klacht succesvol verzonden!")
-        except Exception as e:
-            st.error(f"Er ging iets mis: {e}")
+                # 3. Interne notitie (alleen voor admin/medewerker)
+                oude_notitie = k.get('interne_notitie', '')
+                notitie = st.text_area("Interne notitie", value=oude_notitie, key=f"note_{k['id']}")
+                if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
+                    supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
+                    st.success("Notitie opgeslagen!")
+                
+                # 4. E-mail sturen
+                if k.get('email'):
+                    email_link = f"mailto:{k['email']}?subject=Update over uw klacht bij Wanica Centrum&body=Geachte {k['volledige_naam']},%0A%0AHierbij een update over uw ingediende klacht.%0A%0AMet vriendelijke groet,%0AKlachtenunit Wanica"
+                    st.markdown(f'<a href="{email_link}" target="_blank" style="text-decoration:none; color:white; background:#004a99; padding:10px; border-radius:5px;">📧 E-mail naar klant sturen</a>', unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"Fout bij het laden van klachten: {e}")
