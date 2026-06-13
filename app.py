@@ -110,15 +110,38 @@ if st.session_state.logged_in:
         else:
             st.write("Geen data beschikbaar om rapporten te genereren.")
 
-    elif menu == "Instellingen":
-        st.title("⚙️ Instellingen")
-        tab1, tab2 = st.tabs(["Gebruikers", "Rollen"])
+   elif menu == "Instellingen":
+        st.title("⚙️ Instellingen - Gebruikersbeheer")
+        
+        # Beperk toegang tot alleen de admin (pas dit eventueel aan naar jouw inloglogica)
+        tab1, tab2 = st.tabs(["Medewerkers", "Rollen Beheer"])
+        
         with tab1:
-            st.text_input("Nieuwe medewerker")
-            st.button("Toevoegen")
-        with tab2:
-            st.write("Beheer rollen hier.")
+            st.subheader("Nieuwe medewerker aanmaken")
+            with st.form("add_user"):
+                new_user = st.text_input("Gebruikersnaam")
+                new_pass = st.text_input("Wachtwoord", type="password")
+                new_rol = st.selectbox("Rol", ["admin", "gebruiker"])
+                if st.form_submit_button("Toevoegen"):
+                    supabase.table("medewerkers").insert({
+                        "gebruikersnaam": new_user, 
+                        "wachtwoord": new_pass, 
+                        "rol": new_rol
+                    }).execute()
+                    st.success("Medewerker toegevoegd!")
 
+            st.subheader("Bestaande medewerkers")
+            gebruikers_lijst = supabase.table("medewerkers").select("*").execute().data
+            for user in gebruikers_lijst:
+                col1, col2 = st.columns([3, 1])
+                col1.write(f"**{user['gebruikersnaam']}** ({user['rol']})")
+                if col2.button("Verwijderen", key=f"del_{user['id']}"):
+                    supabase.table("medewerkers").delete().eq("id", user['id']).execute()
+                    st.rerun()
+
+        with tab2:
+            st.info("Hier kun je rollen aanpassen door de medewerker te bewerken.")
+            # Hier kun je later een update-formulier toevoegen
 # --- FORMULIER ---
 st.divider()
 st.title("Klacht indienen")
