@@ -21,19 +21,19 @@ st.markdown("""
         margin-bottom: 30px;
     }
     .contact-info {
-        font-size: 0.9em;
-        margin-top: 10px;
-        opacity: 0.9;
+        font-size: 0.95em;
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255,255,255,0.2);
     }
     </style>
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
         <div class="contact-info">
-            📍 Indira Gandhiweg | 📞 (+597) 584xxx | ✉️ klachten.wanica@gov.sr
+            📍 <b>Adres:</b> Indira Gandhiweg | 📞 <b>Tel:</b> (+597) 584xxx | 💬 <b>WhatsApp:</b> (+597) 8xxx-xxx | ✉️ <b>E-mail:</b> klachten.wanica@gov.sr
         </div>
     </div>
 """, unsafe_allow_html=True)
-
 # --- LOGIN LOGICA ---
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
