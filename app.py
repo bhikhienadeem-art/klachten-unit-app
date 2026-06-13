@@ -1,32 +1,38 @@
 import streamlit as st
-import uuid
 from supabase import create_client
 
 # --- CONFIGURATIE ---
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjI4MDgsImV4cCI6MjA5NjczODgwOH0.JxBByUdNydkVc4FQ0Eg5fvO3ERi13LvJHKHuJPH83uk" 
+SUPABASE_KEY = "PLAK_HIER_JE_NIEUWE_ANON_SLEUTEL" 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- CSS STYLING (VASTGEZET OM TYPEERROR TE VOORKOMEN) ---
+# --- CSS STYLING ---
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { padding-top: 0rem; }
     .header-bar { 
-        background-color: #004a99; 
-        color: white; 
-        padding: 40px 20px; 
-        text-align: center; 
-        margin-bottom: 30px;
+        background-color: #004a99; color: white; padding: 30px 20px; 
+        text-align: center; margin-bottom: 30px; border-bottom: 5px solid #ffcc00;
     }
-    .main-title { font-size: 32px; font-weight: bold; }
+    .main-title { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+    .contact-info { font-size: 16px; line-height: 1.6; }
     [data-testid="stSidebar"] { background-color: #004a99 !important; }
     [data-testid="stSidebar"] * { color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header-bar"><div class="main-title">Klachtenunit Wanica Centrum</div></div>', unsafe_allow_html=True)
+# --- HEADER MET GEGEVENS COMMISSARIAAT ---
+st.markdown("""
+    <div class="header-bar">
+        <div class="main-title">Klachtenunit Commissariaat Wanica Centrum</div>
+        <div class="contact-info">
+            📍 Tawajariweg #20 | 📞 366660 / 366929 | 💬 8921062 <br>
+            📧 klachtenunitwanicacentrum@gmail.com
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # --- LOGIN ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
@@ -62,8 +68,8 @@ else:
     with st.form("klacht_form", clear_on_submit=True):
         naam = st.text_input("Volledige naam")
         omschrijving = st.text_area("Omschrijving")
-        if st.form_submit_button("Verstuur"):
+        if st.form_submit_button("Verstuur klacht"):
             try:
                 supabase.table("klachten").insert({"volledige_naam": naam, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
-                st.success("Klacht verzonden!")
-            except Exception as e: st.error(f"Fout: {e}")
+                st.success("Uw klacht is succesvol verzonden naar het Commissariaat.")
+            except Exception as e: st.error(f"Database fout: {e}")
