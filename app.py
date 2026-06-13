@@ -8,7 +8,17 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- LOGIN ---
+# --- HEADER (Hersteld) ---
+st.markdown("""
+    <style>
+    .header-bar { background-color: #004a99; color: white; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px; }
+    </style>
+    <div class="header-bar">
+        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+    </div>
+""", unsafe_allow_html=True)
+
+# --- LOGIN LOGICA ---
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
     st.session_state.rol = None
@@ -31,29 +41,22 @@ if st.session_state.logged_in and st.session_state.rol == 'admin':
         for k in klachten:
             with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
                 st.write(f"**ID:** {k.get('id_nummer', '-')} | **Tel:** {k.get('telefoon_whatsapp', '-')}")
-                st.write(f"**Adres:** {k.get('adres', '-')} | **Email:** {k.get('email', '-')}")
+                st.write(f"**Email:** {k.get('email', '-')} | **Adres:** {k.get('adres', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                 
-                # --- INTERNE NOTITIE ---
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
                 if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
                     supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
-                    st.success("Notitie opgeslagen")
+                    st.success("Notitie opgeslagen!")
                 
-                # Status update
                 nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
                                              index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
                                              key=f"status_{k['id']}")
                 if st.button("Update Status", key=f"upd_{k['id']}"):
                     supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
                     st.rerun()
-                
-                # E-mail actie
-                if k.get('email'):
-                    st.markdown(f'<a href="mailto:{k["email"]}?subject=Update klacht&body=Geachte {k["volledige_naam"]}, ..." style="padding:10px; background:#004a99; color:white; border-radius:5px; text-decoration:none;">📧 Mail client</a>', unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error(f"Fout bij laden dashboard: {e}")
+    except Exception:
+        st.error("Kon klachten niet inladen.")
 
 # --- FORMULIER (Altijd zichtbaar) ---
 st.divider()
@@ -72,13 +75,10 @@ with st.form("klacht_form", clear_on_submit=True):
     omschrijving = st.text_area("Omschrijving")
     
     if st.form_submit_button("Verstuur klacht"):
-        try:
-            data = {
-                "volledige_naam": naam, "id_nummer": id_nr, "email": email,
-                "adres": adres, "telefoon_whatsapp": telefoon,
-                "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"
-            }
-            supabase.table("klachten").insert(data).execute()
-            st.success("Klacht succesvol verzonden!")
-        except Exception as e:
-            st.error(f"Fout bij versturen: {e}")
+        data = {
+            "volledige_naam": naam, "id_nummer": id_nr, "email": email,
+            "adres": adres, "telefoon_whatsapp": telefoon,
+            "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"
+        }
+        supabase.table("klachten").insert(data).execute()
+        st.success("Klacht succesvol verzonden!")
