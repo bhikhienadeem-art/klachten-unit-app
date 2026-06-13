@@ -69,14 +69,26 @@ if st.session_state.logged_in:
         response = supabase.table("klachten").select("*").order("id", desc=True).execute()
         klachten = response.data
         
-        if klachten:
+       if klachten:
             for k in klachten:
-                with st.expander(f"Klacht #{k['id']} - {k['onderwerp']} ({k['status']})"):
-                    st.write(f"**Naam:** {k['volledige_naam']}")
-                    st.write(f"**E-mail:** {k['email']}")
-                    st.write(f"**Omschrijving:** {k['omschrijving']}")
+                # We halen hier alle gegevens op met .get() om crashes te voorkomen
+                onderwerp = k.get('onderwerp', 'Geen onderwerp')
+                status = k.get('status', 'Nieuw')
+                
+                # De kop van de expander (blijft compact)
+                with st.expander(f"Klacht #{k.get('id', '?')} - {onderwerp} ({status})"):
+                    # Hier tonen we ALLE details
+                    st.markdown("### Gegevens van de klant:")
+                    st.write(f"👤 **Volledige naam:** {k.get('volledige_naam', 'Niet opgegeven')}")
+                    st.write(f"📧 **E-mailadres:** {k.get('email', 'Geen e-mail')}")
+                    st.write(f"📞 **Telefoonnummer:** {k.get('telefoon', 'Geen telefoonnummer')}")
+                    st.write(f"📋 **Onderwerp:** {onderwerp}")
+                    st.markdown("---")
+                    st.write(f"💬 **Omschrijving:**")
+                    st.info(k.get('omschrijving', 'Geen omschrijving opgegeven'))
                     
-                    if k['status'] != "Afgehandeld":
+                    # Actieknop
+                    if status != "Afgehandeld":
                         if st.button(f"Markeer als afgehandeld", key=f"btn_{k['id']}"):
                             supabase.table("klachten").update({"status": "Afgehandeld"}).eq("id", k['id']).execute()
                             st.rerun()
