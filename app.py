@@ -10,22 +10,26 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- CSS LAYOUT ---
+# --- CSS & HEADER ---
 st.markdown("""
     <style>
-    /* Algemene styling */
     .main { background-color: #f5f7f9; }
     [data-testid="stSidebar"] { background-color: #004a99; color: white; }
     [data-testid="stSidebar"] * { color: white !important; }
-    
-    /* Statistieken blokken */
-    .metric-card { background-color: white; padding: 15px; border-radius: 10px; border: 1px solid #004a99; text-align: center; }
-    
-    /* Klacht container */
     .klacht-box { background-color: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #004a99; box-shadow: 2px 2px 5px #ddd; }
-    
+    .header-bar { background-color: #004a99; color: white; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
     h1 { color: #004a99; }
     </style>
+""", unsafe_allow_html=True)
+
+# Blauwe headerbalk met gegevens
+st.markdown("""
+    <div class="header-bar">
+        <h2 style="color: white; margin: 0;">Klachten Unit Wanica Centrum</h2>
+        <p style="margin: 5px; font-size: 14px;">
+            📍 Adres: Commissariaat Wanica, Lelydorp | 📞 Tel: +597 123456 | 💬 WhatsApp: +597 8889999 | 📧 E-mail: info@wanica-centrum.sr
+        </p>
+    </div>
 """, unsafe_allow_html=True)
 
 # --- LOGIN ---
@@ -70,16 +74,15 @@ if st.session_state.logged_in:
 
     st.markdown("---")
     
-    # Lijst met klachten in de strakke nieuwe layout
     for k in klachten:
         with st.container():
             st.markdown(f'<div class="klacht-box">', unsafe_allow_html=True)
             st.subheader(f"Klacht #{k.get('id')} - {k.get('volledige_naam')}")
-            c1, c2 = st.columns(2)
-            c1.write(f"📧 **E-mail:** {k.get('email')}")
-            c1.write(f"📞 **Telefoon:** {k.get('telefoon')}")
-            c2.write(f"🏷️ **Onderwerp:** {k.get('onderwerp')}")
-            c2.write(f"Status: **{k.get('status')}**")
+            col1, col2 = st.columns(2)
+            col1.write(f"📧 **E-mail:** {k.get('email')}")
+            col1.write(f"📞 **Telefoon:** {k.get('telefoon')}")
+            col2.write(f"🏷️ **Onderwerp:** {k.get('onderwerp')}")
+            col2.write(f"Status: **{k.get('status')}**")
             st.write(f"📝 **Omschrijving:** {k.get('omschrijving')}")
             if k.get('bestands_url'): st.markdown(f"[🔗 Bekijk bijlage]({k['bestands_url']})")
             
@@ -90,7 +93,7 @@ if st.session_state.logged_in:
             st.markdown('</div>', unsafe_allow_html=True)
 else:
     # --- KLANT FORMULIER ---
-    st.title("Welkom bij de Klachten Unit Wanica")
+    st.title("Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
@@ -113,4 +116,4 @@ else:
                 "volledige_naam": naam, "email": email, "telefoon": telefoon, 
                 "onderwerp": onderwerp, "omschrijving": omschrijving, "status": "Nieuw", "bestands_url": url
             }).execute()
-            st.success("Uw klacht is verzonden!")
+            st.success("Uw klacht is succesvol verzonden!")
