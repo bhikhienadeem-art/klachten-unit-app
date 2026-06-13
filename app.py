@@ -22,7 +22,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Blauwe headerbalk met gegevens
 st.markdown("""
     <div class="header-bar">
         <h2 style="color: white; margin: 0;">Klachten Unit Wanica Centrum</h2>
@@ -32,15 +31,13 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- LOGIN ---
+# --- LOGIN & DASHBOARD ---
 def check_login(username, password):
     pw_hash = hashlib.sha256(password.encode()).hexdigest()
     try:
         response = supabase.table("gebruikers").select("*").eq("username", username).execute()
-        if response.data and response.data[0]['password_hash'] == pw_hash:
-            return response.data[0]
+        return response.data[0] if (response.data and response.data[0]['password_hash'] == pw_hash) else None
     except: return None
-    return None
 
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 
@@ -60,23 +57,18 @@ with st.sidebar:
         st.write(f"Ingelogd: {st.session_state.user_data.get('username')}")
         if st.button("Uitloggen"): st.session_state.logged_in = False; st.rerun()
 
-# --- DASHBOARD LOGICA ---
 if st.session_state.logged_in:
     st.title("DASHBOARD OVERZICHT")
-    
-    # Statistieken
     klachten = supabase.table("klachten").select("*").execute().data
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Totaal Nieuw", len([k for k in klachten if k.get('status') == 'Nieuw']))
     c2.metric("In Behandeling", "15")
     c3.metric("Afgehandeld", len([k for k in klachten if k.get('status') == 'Afgehandeld']))
     c4.metric("Gem. Reactietijd", "2.5 d")
-
     st.markdown("---")
-    
     for k in klachten:
         with st.container():
-            st.markdown(f'<div class="klacht-box">', unsafe_allow_html=True)
+            st.markdown('<div class="klacht-box">', unsafe_allow_html=True)
             st.subheader(f"Klacht #{k.get('id')} - {k.get('volledige_naam')}")
             col1, col2 = st.columns(2)
             col1.write(f"📧 **E-mail:** {k.get('email')}")
@@ -85,14 +77,12 @@ if st.session_state.logged_in:
             col2.write(f"Status: **{k.get('status')}**")
             st.write(f"📝 **Omschrijving:** {k.get('omschrijving')}")
             if k.get('bestands_url'): st.markdown(f"[🔗 Bekijk bijlage]({k['bestands_url']})")
-            
             if k.get('status') != 'Afgehandeld':
                 if st.button("Markeer als afgehandeld", key=f"done_{k['id']}"):
                     supabase.table("klachten").update({"status": "Afgehandeld"}).eq("id", k['id']).execute()
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 else:
-    # --- KLANT FORMULIER ---
     st.title("Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -108,12 +98,16 @@ else:
         if st.form_submit_button("Verstuur klacht"):
             url = None
             if bestand:
-                bestandsnaam = f"{uuid.uuid4()}_{bestand.name}"
-                supabase.storage.from_("klacht-bestanden").upload(bestandsnaam, bestand.getvalue())
-                url = f"{SUPABASE_URL}/storage/v1/object/public/klacht-bestanden/{bestandsnaam}"
+                try:
+                    bestandsnaam = f"{uuid.uuid4()}_{bestand.name}"
+                    supabase.storage.from_("klacht-bestanden").upload(bestandsnaam, bestand.getvalue())
+                    url = f"{SUPABASE_URL}/storage/v1/object/public/klacht-bestanden/{bestandsnaam}"
+                except Exception as e:
+                    st.error(f"Fout bij uploaden bestand: {e}")
             
-            supabase.table("klachten").insert({
-                "volledige_naam": naam, "email": email, "telefoon": telefoon, 
-                "onderwerp": onderwerp, "omschrijving": omschrijving, "status": "Nieuw", "bestands_url": url
-            }).execute()
-            st.success("Uw klacht is succesvol verzonden!")
+            if not bestand or url:
+                supabase.table("klachten").insert({
+                    "volledige_naam": naam, "email": email, "telefoon": telefoon, 
+                    "onderwerp": onderwerp, "omschrijving": omschrijving, "status": "Nieuw", "bestands_url": url
+                }).execute()
+                st.success("Uw klacht is succesvol verzonden!")
