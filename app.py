@@ -1,5 +1,4 @@
 import streamlit as st
-import uuid
 from supabase import create_client
 
 # --- CONFIGURATIE ---
@@ -9,20 +8,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- HEADER & STYLING ---
-st.markdown("""
-    <style>
-    .header-bar { background-color: #004a99; color: white; padding: 20px; text-align: center; border: 5px solid #ffcc00; }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <div class="header-bar">
-        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-    </div>
-""", unsafe_allow_html=True)
-
-# --- LOGIN ---
+# --- LOGIN LOGICA ---
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
     st.session_state.rol = None
@@ -41,22 +27,23 @@ with st.sidebar:
 if st.session_state.logged_in and st.session_state.rol == 'admin':
     st.title("📊 Dashboard")
     try:
-        klachten = supabase.table("klachten").select("*").execute().data
+        response = supabase.table("klachten").select("*").execute()
+        klachten = response.data
         for k in klachten:
-            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
+            with st.expander(f"Klacht van: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
                 st.write(f"**Adres:** {k.get('adres', '-')} | **Tel:** {k.get('telefoon_whatsapp', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                 
+                # Status update
                 nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
-                                             index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
                                              key=f"status_{k['id']}")
-                if st.button("Update Status", key=f"upd_{k['id']}"):
+                if st.button("Update Status", key=f"btn_{k['id']}"):
                     supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
                     st.rerun()
-    except Exception as e:
+    except Exception:
         st.error("Kon klachten niet laden.")
 
-# --- PUBLIEK FORMULIER (Altijd zichtbaar) ---
+# --- FORMULIER (Altijd zichtbaar) ---
 st.divider()
 st.title("Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
@@ -82,4 +69,4 @@ with st.form("klacht_form", clear_on_submit=True):
             supabase.table("klachten").insert(data).execute()
             st.success("Klacht succesvol verzonden!")
         except Exception as e:
-            st.error(f"Fout: {e}")
+            st.error(f"Er ging iets mis: {e}")
