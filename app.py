@@ -8,13 +8,29 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- HEADER (Hersteld) ---
+# --- HEADER MET GOUDEN RAND EN CONTACTGEGEVENS ---
 st.markdown("""
     <style>
-    .header-bar { background-color: #004a99; color: white; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px; }
+    .header-bar { 
+        background-color: #004a99; 
+        color: white; 
+        padding: 25px; 
+        text-align: center; 
+        border: 5px solid #ffcc00; 
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    .contact-info {
+        font-size: 0.9em;
+        margin-top: 10px;
+        opacity: 0.9;
+    }
     </style>
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+        <div class="contact-info">
+            📍 Indira Gandhiweg | 📞 (+597) 584xxx | ✉️ klachten.wanica@gov.sr
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
