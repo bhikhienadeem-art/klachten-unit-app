@@ -97,7 +97,7 @@ else:
         with col2:
             telefoon = st.text_input("Telefoon/Whatsapp Nummer")
             soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        omschrijving = st.text_area("Omschrijving")
+        omschrijving = st.text_area("Beschrijf hier uw klacht indien gewenst een mogelijke oplossing")
         bestand = st.file_uploader("Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
         
         if st.form_submit_button("Verstuur klacht"):
