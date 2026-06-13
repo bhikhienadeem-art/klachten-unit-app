@@ -85,8 +85,30 @@ if st.session_state.logged_in:
 
     elif menu == "Rapporten":
         st.title("📈 Rapporten")
-        st.selectbox("Type rapport", ["Wekelijks", "Maandelijks"])
-        st.button("Genereer & Download Rapport")
+        import pandas as pd
+        
+        # Data ophalen
+        data = supabase.table("klachten").select("*").execute().data
+        df = pd.DataFrame(data)
+        
+        if not df.empty:
+            rapport_type = st.selectbox("Type rapport", ["Wekelijks", "Maandelijks"])
+            
+            # Visualisatie: Klachten per soort
+            st.subheader("Klachtenverdeling per soort")
+            chart_data = df['klachtensoort'].value_counts()
+            st.bar_chart(chart_data)
+            
+            # Download knop
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download rapport als CSV",
+                data=csv,
+                file_name=f'rapport_{rapport_type.lower()}.csv',
+                mime='text/csv',
+            )
+        else:
+            st.write("Geen data beschikbaar om rapporten te genereren.")
 
     elif menu == "Instellingen":
         st.title("⚙️ Instellingen")
