@@ -25,6 +25,18 @@ st.markdown("""
     .main-title { font-size: 32px; font-weight: bold; margin-bottom: 15px; }
     .sub-text { font-size: 18px; line-height: 1.5; max-width: 800px; margin: 0 auto; }
     .contact-line { font-size: 14px; margin-top: 20px; color: #e0e0e0; }
+    
+    /* Blauwe zijbalk aanpassing */
+    [data-testid="stSidebar"] {
+        background-color: #004a99 !important;
+    }
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    [data-testid="stSidebar"] input {
+        background-color: white !important;
+        color: black !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -46,7 +58,6 @@ with st.sidebar:
     user = st.text_input("Gebruikersnaam")
     pw = st.text_input("Wachtwoord", type="password")
     if st.button("Inloggen"):
-        # Hier kan je eventueel je check_login functie aanroepen
         if user == "admin" and pw == "admin123": 
             st.session_state.logged_in = True
             st.rerun()
