@@ -9,14 +9,31 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- CSS STYLING ---
+# --- CSS STYLING (HERSTELD) ---
 st.markdown("""
     <style>
-    .header-bar { background-color: #004a99; color: white; padding: 20px; text-align: center; margin-bottom: 20px; }
+    [data-testid="stAppViewContainer"] { padding-top: 0rem; }
+    .header-bar { 
+        background-color: #004a99; color: white; padding: 30px 20px; 
+        text-align: center; margin-bottom: 30px; border-bottom: 5px solid #ffcc00;
+    }
+    .main-title { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+    .contact-info { font-size: 16px; line-height: 1.6; }
+    [data-testid="stSidebar"] { background-color: #004a99 !important; }
+    [data-testid="stSidebar"] * { color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header-bar"><h1>Klachtenunit Wanica Centrum</h1></div>', unsafe_allow_html=True)
+# --- HEADER (HERSTELD) ---
+st.markdown("""
+    <div class="header-bar">
+        <div class="main-title">Klachtenunit Commissariaat Wanica Centrum</div>
+        <div class="contact-info">
+            📍 Tawajariweg #20 | 📞 366660 / 366929 | 💬 8921062 <br>
+            📧 klachtenunitwanicacentrum@gmail.com
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # --- LOGIN & ROL-BEHEER ---
 if "logged_in" not in st.session_state: 
