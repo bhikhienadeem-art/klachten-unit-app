@@ -8,7 +8,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- LOGIN LOGICA ---
+# --- LOGIN ---
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
     st.session_state.rol = None
@@ -29,49 +29,25 @@ if st.session_state.logged_in and st.session_state.rol == 'admin':
     try:
         klachten = supabase.table("klachten").select("*").execute().data
         for k in klachten:
-            # Veilige status bepaling
-            status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-            huidige_status = k.get('status', 'Nieuw')
-            if huidige_status not in status_opties:
-                huidige_status = "Nieuw"
-                
-            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {huidige_status}"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(f"**ID:** {k.get('id_nummer', '-')}")
-                    st.write(f"**E-mail:** {k.get('email', '-')}")
-                with col2:
-                    st.write(f"**Tel:** {k.get('telefoon_whatsapp', '-')}")
-                    st.write(f"**Adres:** {k.get('adres', '-')}")
+            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
+                st.write(f"**ID:** {k.get('id_nummer', '-')} | **Tel:** {k.get('telefoon_whatsapp', '-')}")
+                st.write(f"**Adres:** {k.get('adres', '-')} | **Email:** {k.get('email', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                # --- E-MAIL FUNCTIE ---
-# Controleer of het e-mailadres beschikbaar is
-if k.get('email'):
-    # Stel de onderwerpregel en de inhoud van de mail in
-    onderwerp = "Update over uw klacht bij Commissariaat Wanica"
-    body = f"Geachte {k.get('volledige_naam')},%0A%0AHierbij sturen wij u een update over uw ingediende klacht (%23{k.get('id_nummer')}).%0A%0AMet vriendelijke groet,%0AKlachtenunit Wanica"
-    
-    # Maak de mailto link
-    email_url = f"mailto:{k.get('email')}?subject={onderwerp}&body={body}"
-    
-    # Toon de knop als een gestylde link
-    st.markdown(
-        f'<a href="{email_url}" style="text-decoration:none; color:white; background-color:#004a99; padding:10px 20px; border-radius:5px; display:inline-block;">📧 E-mail sturen naar client</a>', 
-        unsafe_allow_html=True
-    )
-                # Interne Notitie
-                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
-                if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
-                    supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
-                    st.success("Notitie opgeslagen")
-
+                
                 # Status update
-                nieuwe_status = st.selectbox("Status wijzigen", status_opties, index=status_opties.index(huidige_status), key=f"sel_{k['id']}")
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
+                                             index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
+                                             key=f"status_{k['id']}")
                 if st.button("Update Status", key=f"upd_{k['id']}"):
                     supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
                     st.rerun()
+                
+                # E-mail actie
+                if k.get('email'):
+                    st.markdown(f'<a href="mailto:{k["email"]}?subject=Update klacht&body=Geachte {k["volledige_naam"]}, ..." style="padding:10px; background:#004a99; color:white; border-radius:5px; text-decoration:none;">📧 Mail client</a>', unsafe_allow_html=True)
+
     except Exception as e:
-        st.error(f"Fout bij laden: {e}")
+        st.error(f"Fout bij laden dashboard: {e}")
 
 # --- FORMULIER (Altijd zichtbaar) ---
 st.divider()
@@ -99,4 +75,4 @@ with st.form("klacht_form", clear_on_submit=True):
             supabase.table("klachten").insert(data).execute()
             st.success("Klacht succesvol verzonden!")
         except Exception as e:
-            st.error(f"Fout: {e}")
+            st.error(f"Fout bij versturen: {e}")
