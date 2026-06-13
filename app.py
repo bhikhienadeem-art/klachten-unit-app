@@ -19,8 +19,6 @@ st.markdown("""
     }
     .main-title { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
     .contact-info { font-size: 16px; line-height: 1.6; }
-    
-    /* Zorg dat sidebar tekst altijd leesbaar is */
     [data-testid="stSidebar"] { background-color: #f0f2f6 !important; }
     [data-testid="stSidebar"] div { color: black !important; }
     </style>
@@ -37,12 +35,11 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- LOGIN & STATE ---
+# --- LOGIN ---
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
     st.session_state.rol = None
 
-# Sidebar is nu altijd beschikbaar
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
     if not st.session_state.logged_in:
@@ -59,14 +56,52 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- DASHBOARD & ADMIN BEHEER ---
+# --- DASHBOARD & FORMULIER ---
 if st.session_state.logged_in:
     if st.session_state.rol == 'admin':
         tab1, tab2 = st.tabs(["📊 Dashboard", "⚙️ Medewerker Beheer"])
-        # ... (de rest van je dashboard code blijft hetzelfde)
+        with tab1:
+            st.title("Dashboard")
+            response = supabase.table("klachten").select("*").execute()
+            for k in response.data:
+                with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')}"):
+                    st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                    st.write(f"**Status:** {k.get('status', 'Nieuw')}")
+        with tab2:
+            st.subheader("Medewerker Beheer")
+            # Beheer logica...
     else:
         st.title("Dashboard (Medewerker)")
 else:
-    # --- PUBLIEK FORMULIER ---
+    # HIER KOMT JE FORMULIER TERUG
     st.title("Klacht indienen")
-    # ... (jouw formulier blijft hetzelfde)
+    with st.form("klacht_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            naam = st.text_input("Volledige naam")
+            id_nr = st.text_input("ID Nummer")
+            email = st.text_input("E-mailadres")
+        with col2:
+            adres = st.text_input("Adres")
+            telefoon = st.text_input("Telefoon/Whatsapp")
+            soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        
+        omschrijving = st.text_area("Omschrijving")
+        uploaded_file = st.file_uploader("Voeg bijlage toe", type=['png', 'jpg', 'pdf'])
+        
+        if st.form_submit_button("Verstuur klacht"):
+            try:
+                file_path = None
+                if uploaded_file:
+                    file_path = f"bijlagen/{uuid.uuid4()}_{uploaded_file.name}"
+                    supabase.storage.from_("klachten-bijlagen").upload(file_path, uploaded_file.getvalue())
+                
+                data = {
+                    "volledige_naam": naam, "id_nummer": id_nr, "email": email, "adres": adres, 
+                    "telefoon_whatsapp": telefoon, "klachtensoort": soort, "omschrijving": omschrijving, 
+                    "status": "Nieuw", "bijlagen": file_path
+                }
+                supabase.table("klachten").insert(data).execute()
+                st.success("Verzonden!")
+            except Exception as e:
+                st.error(f"Fout: {e}")
