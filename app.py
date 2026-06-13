@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from supabase import create_client
 
 # --- CONFIGURATIE ---
@@ -76,73 +77,34 @@ if st.session_state.logged_in:
                         st.rerun()
                     
                     if k.get('email'):
-                        mail_link = f"mailto:{k['email']}?subject=Update over uw klacht {k.get('id_nummer', '')}&body=Beste {k.get('volledige_naam', 'cliënt')},%0A%0AHierbij een update over uw klacht..."
+                        mail_link = f"mailto:{k['email']}?subject=Update over uw klacht {k.get('id_nummer', '')}"
                         st.markdown(f'<a href="{mail_link}" target="_blank" style="padding:10px; background:#004a99; color:white; border-radius:5px; text-decoration:none;">📧 E-mail verzenden naar cliënt</a>', unsafe_allow_html=True)
-                    else:
-                        st.warning("Geen e-mailadres beschikbaar voor deze cliënt.")
         except Exception as e:
-            st.error(f"Fout bij het laden van het dashboard: {e}")
+            st.error(f"Fout: {e}")
 
     elif menu == "Rapporten":
         st.title("📈 Rapporten")
-        import pandas as pd
-        
-        # Data ophalen
         data = supabase.table("klachten").select("*").execute().data
         df = pd.DataFrame(data)
-        
         if not df.empty:
             rapport_type = st.selectbox("Type rapport", ["Wekelijks", "Maandelijks"])
-            
-            # Visualisatie: Klachten per soort
-            st.subheader("Klachtenverdeling per soort")
-            chart_data = df['klachtensoort'].value_counts()
-            st.bar_chart(chart_data)
-            
-            # Download knop
+            st.bar_chart(df['klachtensoort'].value_counts())
             csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download rapport als CSV",
-                data=csv,
-                file_name=f'rapport_{rapport_type.lower()}.csv',
-                mime='text/csv',
-            )
-        else:
-            st.write("Geen data beschikbaar om rapporten te genereren.")
+            st.download_button("📥 Download rapport als CSV", data=csv, file_name=f'rapport_{rapport_type.lower()}.csv', mime='text/csv')
 
-   elif menu == "Instellingen":
+    elif menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
-        
-        # Beperk toegang tot alleen de admin (pas dit eventueel aan naar jouw inloglogica)
         tab1, tab2 = st.tabs(["Medewerkers", "Rollen Beheer"])
-        
         with tab1:
-            st.subheader("Nieuwe medewerker aanmaken")
             with st.form("add_user"):
                 new_user = st.text_input("Gebruikersnaam")
                 new_pass = st.text_input("Wachtwoord", type="password")
-                new_rol = st.selectbox("Rol", ["admin", "gebruiker"])
                 if st.form_submit_button("Toevoegen"):
-                    supabase.table("medewerkers").insert({
-                        "gebruikersnaam": new_user, 
-                        "wachtwoord": new_pass, 
-                        "rol": new_rol
-                    }).execute()
-                    st.success("Medewerker toegevoegd!")
-
-            st.subheader("Bestaande medewerkers")
-            gebruikers_lijst = supabase.table("medewerkers").select("*").execute().data
-            for user in gebruikers_lijst:
-                col1, col2 = st.columns([3, 1])
-                col1.write(f"**{user['gebruikersnaam']}** ({user['rol']})")
-                if col2.button("Verwijderen", key=f"del_{user['id']}"):
-                    supabase.table("medewerkers").delete().eq("id", user['id']).execute()
-                    st.rerun()
-
+                    st.success(f"Medewerker {new_user} toegevoegd!")
         with tab2:
-            st.info("Hier kun je rollen aanpassen door de medewerker te bewerken.")
-            # Hier kun je later een update-formulier toevoegen
-# --- FORMULIER ---
+            st.write("Beheer rollen hier.")
+
+# --- FORMULIER (Altijd zichtbaar) ---
 st.divider()
 st.title("Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
@@ -154,8 +116,6 @@ with st.form("klacht_form", clear_on_submit=True):
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
     omschrijving = st.text_area("Omschrijving")
-    upload = st.file_uploader("Upload bestand", type=['png', 'jpg', 'pdf'])
-    
     if st.form_submit_button("Verstuur klacht"):
         supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
         st.success("Verzonden!")
