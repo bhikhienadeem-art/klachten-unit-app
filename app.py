@@ -9,22 +9,18 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- CSS STYLING (Met gouden rand) ---
+# --- CSS STYLING ---
 st.markdown("""
     <style>
     .header-bar { 
-        background-color: #004a99; 
-        color: white; 
-        padding: 20px; 
-        text-align: center; 
-        border: 5px solid #ffcc00; 
-        margin-bottom: 20px; 
+        background-color: #004a99; color: white; padding: 20px; text-align: center; 
+        border: 5px solid #ffcc00; margin-bottom: 20px; 
     }
     .contact-info { font-size: 14px; margin-top: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER MET GEGEVENS ---
+# --- HEADER ---
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
@@ -35,7 +31,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- LOGIN & ROL-BEHEER ---
+# --- LOGIN ---
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
     st.session_state.rol = None
@@ -50,22 +46,44 @@ with st.sidebar:
             st.session_state.rol = 'admin'
             st.rerun()
 
-# --- DASHBOARD & ADMIN ---
+# --- DASHBOARD & FORMULIER ---
 if st.session_state.logged_in:
     if st.session_state.rol == 'admin':
         tab1, tab2 = st.tabs(["📊 Dashboard", "⚙️ Medewerker Beheer"])
         with tab1:
             st.title("Dashboard")
         with tab2:
-            st.subheader("Nieuwe Medewerker Toevoegen")
-            # ... (Rest van de code voor beheer blijft hier staan)
+            st.subheader("Medewerker Beheer")
     else:
         st.title("Dashboard (Medewerker)")
 else:
-    # --- PUBLIEK FORMULIER ---
+    # --- PUBLIEK FORMULIER MET UPLOAD ---
     st.title("Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
-        naam = st.text_input("Volledige naam")
-        omschrijving = st.text_area("Omschrijving van de klacht")
-        if st.form_submit_button("Verstuur"):
-            st.success("Verzonden!")
+        col1, col2 = st.columns(2)
+        with col1:
+            naam = st.text_input("Volledige naam")
+            email = st.text_input("E-mailadres")
+        with col2:
+            telefoon = st.text_input("Telefoon/Whatsapp")
+            soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        
+        omschrijving = st.text_area("Omschrijving")
+        uploaded_file = st.file_uploader("Voeg bijlage toe", type=['png', 'jpg', 'pdf'])
+        
+        if st.form_submit_button("Verstuur klacht"):
+            try:
+                # Bestand upload logica
+                file_path = None
+                if uploaded_file:
+                    file_path = f"bijlagen/{uuid.uuid4()}_{uploaded_file.name}"
+                    supabase.storage.from_("klachten-bijlagen").upload(file_path, uploaded_file.getvalue())
+                
+                data = {
+                    "volledige_naam": naam, "email": email, "telefoon_whatsapp": telefoon, 
+                    "klachtensoort": soort, "omschrijving": omschrijving, "bijlagen": file_path
+                }
+                supabase.table("klachten").insert(data).execute()
+                st.success("Verzonden!")
+            except Exception as e:
+                st.error(f"Fout: {e}")
