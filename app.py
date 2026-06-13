@@ -44,7 +44,21 @@ if st.session_state.logged_in and st.session_state.rol == 'admin':
                     st.write(f"**Tel:** {k.get('telefoon_whatsapp', '-')}")
                     st.write(f"**Adres:** {k.get('adres', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                
+                # --- E-MAIL FUNCTIE ---
+# Controleer of het e-mailadres beschikbaar is
+if k.get('email'):
+    # Stel de onderwerpregel en de inhoud van de mail in
+    onderwerp = "Update over uw klacht bij Commissariaat Wanica"
+    body = f"Geachte {k.get('volledige_naam')},%0A%0AHierbij sturen wij u een update over uw ingediende klacht (%23{k.get('id_nummer')}).%0A%0AMet vriendelijke groet,%0AKlachtenunit Wanica"
+    
+    # Maak de mailto link
+    email_url = f"mailto:{k.get('email')}?subject={onderwerp}&body={body}"
+    
+    # Toon de knop als een gestylde link
+    st.markdown(
+        f'<a href="{email_url}" style="text-decoration:none; color:white; background-color:#004a99; padding:10px 20px; border-radius:5px; display:inline-block;">📧 E-mail sturen naar client</a>', 
+        unsafe_allow_html=True
+    )
                 # Interne Notitie
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
                 if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
