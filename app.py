@@ -9,25 +9,16 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- CSS STYLING ---
+# --- HEADER & STYLING ---
 st.markdown("""
     <style>
-    .header-bar { 
-        background-color: #004a99; color: white; padding: 20px; text-align: center; 
-        border: 5px solid #ffcc00; margin-bottom: 20px; 
-    }
-    .contact-info { font-size: 14px; margin-top: 10px; }
+    .header-bar { background-color: #004a99; color: white; padding: 20px; text-align: center; border: 5px solid #ffcc00; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER ---
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div class="contact-info">
-            📍 Tawajariweg #20 | 📞 366660 / 366929 | 💬 8921062 <br>
-            📧 klachtenunitwanicacentrum@gmail.com
-        </div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -46,25 +37,27 @@ with st.sidebar:
             st.session_state.rol = 'admin'
             st.rerun()
 
-# --- DASHBOARD & FORMULIER LOGICA ---
-if st.session_state.logged_in:
-    if st.session_state.rol == 'admin':
-        tab1, tab2 = st.tabs(["📊 Dashboard", "⚙️ Medewerker Beheer"])
-        with tab1:
-            st.title("📊 Dashboard")
-            try:
-                klachten = supabase.table("klachten").select("*").execute().data
-                for k in klachten:
-                    # ... (hier je dashboard loop code zoals je die had)
-            except:
-                st.error("Kon klachten niet ophalen.")
-        with tab2:
-            st.subheader("Medewerker Beheer")
-    else:
-        st.title("Dashboard (Medewerker)")
+# --- DASHBOARD (Alleen voor admins) ---
+if st.session_state.logged_in and st.session_state.rol == 'admin':
+    st.title("📊 Dashboard")
+    try:
+        klachten = supabase.table("klachten").select("*").execute().data
+        for k in klachten:
+            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
+                st.write(f"**Adres:** {k.get('adres', '-')} | **Tel:** {k.get('telefoon_whatsapp', '-')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
+                                             index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
+                                             key=f"status_{k['id']}")
+                if st.button("Update Status", key=f"upd_{k['id']}"):
+                    supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                    st.rerun()
+    except Exception as e:
+        st.error("Kon klachten niet laden.")
 
-# --- DIT FORMULIER IS NU ALTIJD ZICHTBAAR ---
-st.divider() # Geeft een mooie scheidingslijn
+# --- PUBLIEK FORMULIER (Altijd zichtbaar) ---
+st.divider()
 st.title("Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
