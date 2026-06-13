@@ -13,9 +13,32 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 # --- CSS & HEADER ---
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .header-bar { background-color: #004a99; color: white; padding: 20px; border-radius: 5px; text-align: center; margin-bottom: 20px; }
+    .header-bar { 
+        background-color: #004a99; 
+        color: white; 
+        padding: 25px; 
+        border-radius: 10px; 
+        margin-bottom: 20px; 
+        text-align: center; 
+    }
+    .contact-info {
+        font-size: 15px;
+        margin-top: 10px;
+        line-height: 1.8;
+    }
     </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <div class="header-bar">
+        <h1>Klachten Unit Wanica Centrum</h1>
+        <div class="contact-info">
+            📍 Adres: Tawajariweg #20, Lelydorp <br>
+            📞 Tel: +597 366660 / +597 366929 <br>
+            💬 WhatsApp: +597 8921062 <br>
+            📧 E-mail: klachtenunitwanicacentrum@gmail.com
+        </div>
+    </div>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="header-bar"><h2>Klachten Unit Wanica Centrum</h2></div>', unsafe_allow_html=True)
