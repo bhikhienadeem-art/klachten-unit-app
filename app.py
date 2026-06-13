@@ -92,17 +92,50 @@ if st.session_state.logged_in:
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download rapport als CSV", data=csv, file_name=f'rapport_{rapport_type.lower()}.csv', mime='text/csv')
 
-    elif menu == "Instellingen":
+   elif menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
         tab1, tab2 = st.tabs(["Medewerkers", "Rollen Beheer"])
+        
+        # --- TAB 1: Medewerkers toevoegen & verwijderen ---
         with tab1:
-            with st.form("add_user"):
+            st.subheader("Nieuwe medewerker")
+            with st.form("add_user", clear_on_submit=True):
                 new_user = st.text_input("Gebruikersnaam")
                 new_pass = st.text_input("Wachtwoord", type="password")
+                new_rol = st.selectbox("Rol", ["admin", "gebruiker"])
                 if st.form_submit_button("Toevoegen"):
+                    supabase.table("medewerkers").insert({
+                        "gebruikersnaam": new_user, 
+                        "wachtwoord": new_pass, 
+                        "rol": new_rol
+                    }).execute()
                     st.success(f"Medewerker {new_user} toegevoegd!")
+                    st.rerun()
+
+            st.subheader("Bestaande medewerkers")
+            gebruikers = supabase.table("medewerkers").select("*").execute().data
+            for user in gebruikers:
+                col1, col2, col3 = st.columns([2, 1, 1])
+                col1.write(f"**{user['gebruikersnaam']}** ({user['rol']})")
+                
+                # Verwijderknop met unieke key
+                if col3.button("Verwijderen", key=f"del_{user['id']}"):
+                    supabase.table("medewerkers").delete().eq("id", user['id']).execute()
+                    st.rerun()
+
+        # --- TAB 2: Rollen wijzigen ---
         with tab2:
-            st.write("Beheer rollen hier.")
+            st.subheader("Wijzig rol")
+            gebruikers_lijst = {u['gebruikersnaam']: u for u in gebruikers}
+            te_bewerken_naam = st.selectbox("Selecteer medewerker", list(gebruikers_lijst.keys()))
+            
+            if te_bewerken_naam:
+                user = gebruikers_lijst[te_bewerken_naam]
+                nieuwe_rol = st.selectbox("Nieuwe rol", ["admin", "gebruiker"], index=["admin", "gebruiker"].index(user['rol']))
+                if st.button("Rol bijwerken"):
+                    supabase.table("medewerkers").update({"rol": nieuwe_rol}).eq("id", user['id']).execute()
+                    st.success(f"Rol van {te_bewerken_naam} gewijzigd naar {nieuwe_rol}!")
+                    st.rerun()
 
 # --- FORMULIER (Altijd zichtbaar) ---
 st.divider()
