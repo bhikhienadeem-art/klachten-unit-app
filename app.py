@@ -3,7 +3,7 @@ from supabase import create_client
 
 # --- CONFIGURATIE ---
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
-SUPABASE_KEY = "PLAK_HIER_JE_NIEUWE_ANON_SLEUTEL" 
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjI4MDgsImV4cCI6MjA5NjczODgwOH0.JxBByUdNydkVc4FQ0Eg5fvO3ERi13LvJHKHuJPH83uk" 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
@@ -23,7 +23,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER MET GEGEVENS COMMISSARIAAT ---
+# --- HEADER ---
 st.markdown("""
     <div class="header-bar">
         <div class="main-title">Klachtenunit Commissariaat Wanica Centrum</div>
