@@ -32,7 +32,7 @@ st.markdown("""
 
 st.markdown("""
     <div class="header-bar">
-        <div class="main-title">Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum</div>
+        <div class="main-title">Welkom op de pagina van de Klachtenunit van het Commissariaat Wanica Centrum</div>
         <div class="sub-text">
             Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen 
             en, indien gewenst, een mogelijke oplossing voorstellen.
