@@ -21,10 +21,11 @@ st.markdown("""
         text-align: center; 
         margin-bottom: 20px; 
     }
-    .contact-line { font-size: 13px; margin-top: 5px; }
+    .contact-line { font-size: 13px; margin-top: 5px; color: white; }
     </style>
 """, unsafe_allow_html=True)
 
+# Deze header bevat zowel de titel als de contactgegevens en wordt maar één keer getoond
 st.markdown("""
     <div class="header-bar">
         <h2 style="color: white; margin: 0;">Klachten Unit Wanica Centrum</h2>
@@ -33,8 +34,6 @@ st.markdown("""
         </div>
     </div>
 """, unsafe_allow_html=True)
-
-st.markdown('<div class="header-bar"><h2>Klachten Unit Wanica Centrum</h2></div>', unsafe_allow_html=True)
 
 # --- LOGIN ---
 def check_login(username, password):
@@ -74,7 +73,6 @@ else:
             if bestand:
                 try:
                     bestandsnaam = f"{uuid.uuid4()}_{bestand.name}"
-                    # Gebruik de juiste bucketnaam: klachten-bijlagen
                     supabase.storage.from_("klachten-bijlagen").upload(bestandsnaam, bestand.getvalue())
                     url = f"{SUPABASE_URL}/storage/v1/object/public/klachten-bijlagen/{bestandsnaam}"
                 except Exception as e:
