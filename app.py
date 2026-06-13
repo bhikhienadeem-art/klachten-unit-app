@@ -26,17 +26,27 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def check_login(username, password):
+    # Hash het wachtwoord dat de gebruiker intypt
     pw_hash = hash_password(password)
+    
     try:
-        # Zoek gebruiker op username
+        # Zoek in de database naar deze specifieke username
         response = supabase.table("gebruikers").select("*").eq("username", username).execute()
+        
         if response.data:
-            stored_hash = response.data[0]['password_hash']
-            if stored_hash == pw_hash:
-                return response.data[0]
+            db_user = response.data[0]
+            # Vergelijk de hash uit de database met de hash die we net hebben gemaakt
+            if db_user['password_hash'] == pw_hash:
+                return db_user
+            else:
+                st.warning(f"Debug: Hash matcht niet!") # Dit zie je als het wachtwoord fout is
+                return None
+        else:
+            st.warning("Debug: Gebruiker niet gevonden!")
+            return None
     except Exception as e:
-        st.error(f"Database fout: {e}")
-    return None
+        st.error(f"Fout bij database: {e}")
+        return None
 
 # --- STATE ---
 if "logged_in" not in st.session_state:
