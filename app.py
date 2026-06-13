@@ -49,6 +49,28 @@ with st.sidebar:
             st.session_state.logged_in = True
             st.session_state.rol = 'admin'
             st.rerun()
+with st.sidebar:
+    st.header("🔑 Medewerkers Inlog")
+    
+    # Als de gebruiker nog niet is ingelogd, toon het inlogformulier
+    if not st.session_state.logged_in:
+        gebruiker = st.text_input("Gebruikersnaam")
+        wachtwoord = st.text_input("Wachtwoord", type="password")
+        if st.button("Inloggen"):
+            if gebruiker == "admin" and wachtwoord == "admin123":
+                st.session_state.logged_in = True
+                st.session_state.rol = 'admin'
+                st.rerun()
+            else:
+                st.error("Ongeldige inloggegevens")
+    
+    # Als de gebruiker is ingelogd, toon de uitlogknop
+    else:
+        st.success("Je bent ingelogd als Admin")
+        if st.button("Uitloggen"):
+            st.session_state.logged_in = False
+            st.session_state.rol = None
+            st.rerun()
 
 # --- DASHBOARD (Alleen voor admins) ---
 if st.session_state.logged_in and st.session_state.rol == 'admin':
