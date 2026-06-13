@@ -1,10 +1,11 @@
 import streamlit as st
 import hashlib
+import uuid
 from supabase import create_client
 
 # --- CONFIGURATIE ---
-SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
-SUPABASE_KEY = "sb_publishable_XnTLlOfaR0bfZ_gFXlOnuw_zxOi87kb"
+SUPABASE_URL = "JOUW-PROJECT-URL"
+SUPABASE_KEY = "JOUW-PROJECT-KEY"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
@@ -21,26 +22,20 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- FUNCTIES ---
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
 def check_login(username, password):
-    pw_hash = hash_password(password)
+    pw_hash = hashlib.sha256(password.encode()).hexdigest()
     try:
         response = supabase.table("gebruikers").select("*").eq("username", username).execute()
-        if response.data:
-            if response.data[0]['password_hash'] == pw_hash:
-                return response.data[0]
-    except Exception as e:
-        st.error(f"Fout: {e}")
+        if response.data and response.data[0]['password_hash'] == pw_hash:
+            return response.data[0]
+    except: pass
     return None
 
 # --- STATE ---
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.user_data = None
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "page" not in st.session_state: st.session_state.page = "Dashboard"
 
-# --- ZIJKANT (LOGIN) ---
+# --- ZIJKANT ---
 with st.sidebar:
     st.markdown("### 🔐 Medewerker Login")
     if not st.session_state.logged_in:
@@ -52,40 +47,31 @@ with st.sidebar:
                 st.session_state.logged_in = True
                 st.session_state.user_data = data
                 st.rerun()
-            else:
-                st.error("Onjuiste gegevens")
+            else: st.error("Onjuiste gegevens")
     else:
-        st.write(f"Ingelogd als: {st.session_state.user_data['username']}")
-        if st.button("Log uit"):
-            st.session_state.logged_in = False
-            st.rerun()
+        st.write(f"Ingelogd: {st.session_state.user_data['username']}")
+        if st.button("Log uit"): st.session_state.logged_in = False; st.rerun()
 
 # --- HOOFDPROGRAMMA ---
 if st.session_state.logged_in:
-    st.title("Dashboard: Binnengekomen Klachten")
-    try:
-        # Hier halen we de klachten op
-        response = supabase.table("klachten").select("*").order("id", desc=True).execute()
-        klachten = response.data
-        
-        if klachten:
-            for k in klachten:
-                # We gebruiken .get() om te voorkomen dat de app crasht bij missende data
-                onderwerp = k.get('onderwerp', 'Geen onderwerp')
-                with st.expander(f"Klacht #{k.get('id')} - {onderwerp}"):
-                    st.write(f"**Naam:** {k.get('volledige_naam')}")
-                    st.write(f"**Omschrijving:** {k.get('omschrijving')}")
-                    if st.button(f"Markeer als afgehandeld", key=f"btn_{k['id']}"):
-                        supabase.table("klachten").update({"status": "Afgehandeld"}).eq("id", k['id']).execute()
-                        st.rerun()
-        else:
-            st.info("Geen klachten gevonden.")
-    except Exception as e:
-        st.error(f"Fout bij laden van data: {e}")
+    st.title("Dashboard: Klachten")
+    klachten = supabase.table("klachten").select("*").order("id", desc=True).execute().data
+    
+    if klachten:
+        for k in klachten:
+            with st.expander(f"Klacht #{k.get('id')} - {k.get('onderwerp', 'Geen')} ({k.get('status', 'Nieuw')})"):
+                st.write(f"**Naam:** {k.get('volledige_naam')}")
+                st.write(f"**E-mail:** {k.get('email')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
+                if k.get('bestands_url'): st.markdown(f"[Bekijk bijlage]({k['bestands_url']})")
+                
+                if st.button("Markeer als afgehandeld", key=f"done_{k['id']}"):
+                    supabase.table("klachten").update({"status": "Afgehandeld"}).eq("id", k['id']).execute()
+                    st.rerun()
 else:
     # --- FORMULIER ---
     st.markdown("<h1 class='title-style'>Welkom bij de Klachten Unit Wanica</h1>", unsafe_allow_html=True)
-    with st.form("klacht_form"):
+    with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
             naam = st.text_input("Volledige naam")
@@ -94,10 +80,17 @@ else:
             telefoon = st.text_input("Telefoonnummer")
             onderwerp = st.selectbox("Onderwerp", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("Omschrijving")
+        bestand = st.file_uploader("Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
         
         if st.form_submit_button("Verstuur klacht"):
+            url = None
+            if bestand:
+                bestandsnaam = f"{uuid.uuid4()}_{bestand.name}"
+                supabase.storage.from_("klacht-bestanden").upload(bestandsnaam, bestand.getvalue())
+                url = f"https://[JOUW-PROJECT-ID].supabase.co/storage/v1/object/public/klacht-bestanden/{bestandsnaam}"
+            
             supabase.table("klachten").insert({
                 "volledige_naam": naam, "email": email, "telefoon": telefoon, 
-                "onderwerp": onderwerp, "omschrijving": omschrijving, "status": "Nieuw"
+                "onderwerp": onderwerp, "omschrijving": omschrijving, "status": "Nieuw", "bestands_url": url
             }).execute()
-            st.success("Uw klacht is verstuurd!")
+            st.success("Verstuurd!")
