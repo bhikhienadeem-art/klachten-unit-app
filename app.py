@@ -70,7 +70,7 @@ else:
             telefoon = st.text_input("Telefoon/Whatsapp")
             soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         
-        omschrijving = st.text_area("Omschrijving")
+        omschrijving = st.text_area("Omschrijving/Eventueel Oplossing voorstel")
         bestand = st.file_uploader("Voeg bijlage toe (foto/PDF)", type=['png', 'jpg', 'pdf'])
         
         if st.form_submit_button("Verstuur klacht"):
