@@ -83,14 +83,34 @@ if st.session_state.logged_in:
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Medewerkersbeheer")
         
+        # Nieuwe medewerker toevoegen
         with st.expander("Nieuwe medewerker toevoegen"):
             with st.form("add_user"):
                 new_user = st.text_input("Gebruikersnaam")
+                new_pass = st.text_input("Wachtwoord", type="password") # Nieuw: Wachtwoord invoer
                 new_role = st.selectbox("Rol", ["admin", "editor", "viewer"])
                 if st.form_submit_button("Toevoegen"):
-                    supabase.table("medewerkers").insert({"gebruikersnaam": new_user, "rol": new_role}).execute()
-                    st.success("Medewerker toegevoegd!")
+                    supabase.table("medewerkers").insert({
+                        "gebruikersnaam": new_user, 
+                        "wachtwoord": new_pass, # Sla dit op in de database
+                        "rol": new_role
+                    }).execute()
+                    st.success(f"Medewerker {new_user} toegevoegd!")
                     st.rerun()
+
+        # Medewerkers overzicht en verwijderen
+        st.subheader("Huidige Medewerkers")
+        medewerkers = supabase.table("medewerkers").select("*").execute().data
+        
+        for m in medewerkers:
+            cols = st.columns([2, 2, 1])
+            cols[0].write(f"**{m['gebruikersnaam']}**")
+            cols[1].write(f"Rol: {m['rol']}")
+            
+            # Verwijderen knop
+            if cols[2].button("🗑️", key=f"del_{m['id']}"):
+                supabase.table("medewerkers").delete().eq("id", m['id']).execute()
+                st.rerun()
 
         st.subheader("Huidige Medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
