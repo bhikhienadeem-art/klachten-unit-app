@@ -94,6 +94,7 @@ with st.form("klacht_form", clear_on_submit=True):
     with col1:
         naam = st.text_input("Volledige naam")
         id_nr = st.text_input("ID Nummer")
+        woonadres = st.text_input("Woonadres")  # Dit veld is toegevoegd
     with col2:
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
@@ -101,5 +102,14 @@ with st.form("klacht_form", clear_on_submit=True):
     upload = st.file_uploader("Upload bestand", type=['png', 'jpg', 'pdf'])
     
     if st.form_submit_button("Verstuur klacht"):
-        supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
+        # Zorg dat 'adres' overeenkomt met de kolomnaam in je Supabase tabel
+        supabase.table("klachten").insert({
+            "volledige_naam": naam, 
+            "id_nummer": id_nr, 
+            "adres": woonadres,     # Hier wordt het woonadres opgeslagen
+            "email": email, 
+            "klachtensoort": soort, 
+            "omschrijving": omschrijving,Eventueel Oplossing voorstel
+            "status": "Nieuw"
+        }).execute()
         st.success("Verzonden!")
