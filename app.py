@@ -51,17 +51,38 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    if st.session_state.menu == "Dashboard":
+    elif st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
         klachten = supabase.table("klachten").select("*").execute().data
+        
         for k in klachten:
-            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
-                st.write(f"**E-mail:** {k.get('email', '-')}")
-                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                if k.get('email'):
-                    mail_link = f"mailto:{k['email']}"
-                    st.markdown(f'<a href="{mail_link}">📧 E-mail cliënt</a>', unsafe_allow_html=True)
+            with st.expander(f"Klacht: {k.get('volledige_naam')} - Status: {k.get('status')}"):
+                # 1. Alle gegevens tonen
+                st.write(f"**ID:** {k.get('id')}")
+                st.write(f"**Adres:** {k.get('adres', '-')}")
+                st.write(f"**E-mail:** {k.get('email')}")
+                st.write(f"**Soort:** {k.get('klachtensoort')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
+                
+                # 2. Interne notitie toevoegen
+                notitie = st.text_area("Interne notitie", value=k.get('notitie', ''), key=f"note_{k['id']}")
+                if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
+                    supabase.table("klachten").update({"notitie": notitie}).eq("id", k['id']).execute()
+                    st.success("Notitie opgeslagen!")
+                
+                # 3. Status bewerken
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
+                                           index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')),
+                                           key=f"status_{k['id']}")
+                if st.button("Update Status", key=f"update_{k['id']}"):
+                    supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                    st.success("Status bijgewerkt!")
+                    st.rerun()
 
+                # 4. Verwijderen
+                if st.button("🗑️ Klacht verwijderen", key=f"del_{k['id']}"):
+                    supabase.table("klachten").delete().eq("id", k['id']).execute()
+                    st.rerun()
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
         data = supabase.table("klachten").select("*").execute().data
