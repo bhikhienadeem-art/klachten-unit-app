@@ -49,8 +49,7 @@ with st.sidebar:
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
-
-# --- PAGINA LOGICA ---
+            
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     # Hier begint het Dashboard menu
