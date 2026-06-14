@@ -14,9 +14,18 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 st.markdown("""
     <style>
     .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
+    .header-text { margin-top: 10px; font-size: 1.1em; font-style: italic; }
+    .contact-info { font-size: 0.95em; margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); }
     </style>
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+        <div class="header-text">
+            Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum.<br>
+            Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen en, indien gewenst, een mogelijke oplossing voorstellen.
+        </div>
+        <div class="contact-info">
+            📍 <b>Adres:</b> Tawajarieweg 20 | 📞 <b>Tel:</b> (+597) 366660/(+597) 366929 | 💬 <b>WhatsApp:</b> (+597) 8921062 | ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
