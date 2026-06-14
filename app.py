@@ -28,11 +28,10 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- LOGIN & NAVIGATIE ---
-if "logged_in" not in st.session_state: 
-    st.session_state.logged_in = False
+# --- INITIALISATIE & LOGIN ---
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
-menu = "Dashboard"
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
     if not st.session_state.logged_in:
@@ -46,50 +45,49 @@ with st.sidebar:
                 st.error("Ongeldige gegevens")
     else:
         st.success("Ingelogd als Admin")
-        menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
+        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    if menu == "Dashboard":
+    if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
-        try:
-            klachten = supabase.table("klachten").select("*").execute().data
-            for k in klachten:
-                with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.write(f"**ID:** {k.get('id_nummer', '-')}")
-                        st.write(f"**Naam:** {k.get('volledige_naam', '-')}")
-                        st.write(f"**E-mail:** {k.get('email', '-')}")
-                    with col2:
-                        st.write(f"**Adres:** {k.get('adres', '-')}")
-                        st.write(f"**Soort:** {k.get('klachtensoort', '-')}")
-                    st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                    
-                    notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
-                    if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
-                        supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
-                        st.success("Notitie opgeslagen!")
-                    
-                    status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                    huidige_status = k.get('status', 'Nieuw')
-                    nieuwe_status = st.selectbox("Status", status_opties, index=status_opties.index(huidige_status) if huidige_status in status_opties else 0, key=f"status_{k['id']}")
-                    if st.button("Update Status", key=f"upd_{k['id']}"):
-                        supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
-                        st.rerun()
-        except Exception as e:
-            st.error(f"Fout: {e}")
+        klachten = supabase.table("klachten").select("*").execute().data
+        for k in klachten:
+            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write(f"**ID:** {k.get('id_nummer', '-')}")
+                    st.write(f"**Naam:** {k.get('volledige_naam', '-')}")
+                    st.write(f"**E-mail:** {k.get('email', '-')}")
+                with col2:
+                    st.write(f"**Adres:** {k.get('adres', '-')}")
+                    st.write(f"**Soort:** {k.get('klachtensoort', '-')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                
+                # E-MAIL KNOP
+                if k.get('email'):
+                    mail_link = f"mailto:{k['email']}?subject=Update over uw klacht {k.get('id_nummer', '')}&body=Beste {k.get('volledige_naam', 'cliënt')},%0A%0AHierbij een update over uw klacht..."
+                    st.markdown(f'<a href="{mail_link}" target="_blank" style="padding:10px; background:#004a99; color:white; border-radius:5px; text-decoration:none;">📧 E-mail verzenden naar cliënt</a>', unsafe_allow_html=True)
+                
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+                if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
+                    supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
+                    st.success("Notitie opgeslagen!")
+                
+                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                huidige = k.get('status', 'Nieuw')
+                nieuwe = st.selectbox("Status", status_opties, index=status_opties.index(huidige) if huidige in status_opties else 0, key=f"status_{k['id']}")
+                if st.button("Update Status", key=f"upd_{k['id']}"):
+                    supabase.table("klachten").update({"status": nieuwe}).eq("id", k['id']).execute()
+                    st.rerun()
 
-    elif menu == "Rapporten":
+    elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten")
-        st.write("Visualisatie van klachten...")
-
-    elif menu == "Instellingen":
-        st.title("⚙️ Instellingen - Gebruikersbeheer")
-        # Hier kun je de code voor het verwijderen/toevoegen medewerkers plaatsen
+    elif st.session_state.menu == "Instellingen":
+        st.title("⚙️ Instellingen")
 
 # --- FORMULIER ---
 st.divider()
@@ -105,10 +103,6 @@ with st.form("klacht_form", clear_on_submit=True):
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
     omschrijving = st.text_area("Omschrijving, Eventueel oplossing voorstel")
     upload = st.file_uploader("Upload bestand", type=['png', 'jpg', 'pdf'])
-    
     if st.form_submit_button("Verstuur klacht"):
-        supabase.table("klachten").insert({
-            "volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, 
-            "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"
-        }).execute()
+        supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
         st.success("Verzonden!")
