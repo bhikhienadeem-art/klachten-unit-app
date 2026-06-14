@@ -110,6 +110,8 @@ if st.session_state.logged_in:
             if cols[2].button("🗑️", key=f"del_{m['id']}"):
                 supabase.table("medewerkers").delete().eq("id", m['id']).execute()
                 st.rerun()
+
+
 # --- FORMULIER (Voor iedereen zichtbaar) ---
 st.divider()
 st.title("Klacht indienen")
