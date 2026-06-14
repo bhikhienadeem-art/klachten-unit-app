@@ -80,10 +80,9 @@ if st.session_state.logged_in:
                 supabase.table("klachten").delete().eq("id", target_id).execute()
                 st.rerun()
 
-   elif st.session_state.menu == "Instellingen":
+    elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Medewerkersbeheer")
         
-        # Medewerker toevoegen
         with st.expander("Nieuwe medewerker toevoegen"):
             with st.form("add_user"):
                 new_user = st.text_input("Gebruikersnaam")
@@ -93,26 +92,15 @@ if st.session_state.logged_in:
                     st.success("Medewerker toegevoegd!")
                     st.rerun()
 
-        # Medewerkers overzicht en beheer
         st.subheader("Huidige Medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
         
         for m in medewerkers:
             cols = st.columns([2, 1, 1])
             cols[0].write(f"**{m['gebruikersnaam']}** ({m['rol']})")
-            
-            # Rol wijzigen
-            if cols[1].button("Wijzig rol", key=f"edit_{m['id']}"):
-                # Hier zou je een popup kunnen openen of de rol direct updaten
-                pass 
-            
-            # Verwijderen
             if cols[2].button("🗑️", key=f"del_{m['id']}"):
                 supabase.table("medewerkers").delete().eq("id", m['id']).execute()
-                st.rerun()
-
-
-# --- FORMULIER (Voor iedereen zichtbaar) ---
+                st.rerun()# --- FORMULIER (Voor iedereen zichtbaar) ---
 st.divider()
 st.title("Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
