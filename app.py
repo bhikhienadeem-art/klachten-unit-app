@@ -106,6 +106,7 @@ with st.form("klacht_form", clear_on_submit=True):
     if st.form_submit_button("Verstuur klacht"):
         supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
         st.success("Verzonden!")
+        
         if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
         # Haal alle klachten op
