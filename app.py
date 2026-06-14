@@ -51,7 +51,7 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-   if st.session_state.menu == "Dashboard":
+if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
         response = supabase.table("klachten").select("*").execute()
         klachten = response.data
@@ -69,10 +69,17 @@ if st.session_state.logged_in:
                 st.divider()
                 
                 # Acties: Status wijzigen
+                # Zorg dat de lijst overeenkomt met je database waarden
+                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                huidige_status = k.get('status', 'Nieuw')
+                
+                # Zorg dat de index veilig is (default naar 0 als status niet in lijst staat)
+                idx = status_opties.index(huidige_status) if huidige_status in status_opties else 0
+                
                 nieuwe_status = st.selectbox(
                     "Status bijwerken", 
-                    ["Nieuw", "In behandeling", "Afgehandeld"], 
-                    index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')),
+                    status_opties, 
+                    index=idx,
                     key=f"status_{k['id']}"
                 )
                 
@@ -89,14 +96,9 @@ if st.session_state.logged_in:
 
                 # Email actie
                 if k.get('email'):
-                    st.markdown(f'<a href="mailto:{k["email"]}?subject=Update over uw klacht bij Wanica Centrum&body=Geachte {k.get("volledige_naam")}, naar aanleiding van uw klacht..." style="text-decoration:none; color:white; background-color:#004a99; padding:10px; border-radius:5px;">📧 E-mail cliënt sturen</a>', unsafe_allow_html=True)     
-        for k in klachten:
-            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
-                st.write(f"**E-mail:** {k.get('email', '-')}")
-                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                if k.get('email'):
-                    st.markdown(f'<a href="mailto:{k["email"]}">📧 E-mail cliënt</a>', unsafe_allow_html=True)
-
+                    subject = "Update over uw klacht bij Wanica Centrum"
+                    body = f"Geachte {k.get('volledige_naam')}, naar aanleiding van uw klacht..."
+                    st.markdown(f'<a href="mailto:{k["email"]}?subject={subject}&body={body}" style="text-decoration:none; color:white; background-color:#004a99; padding:10px; border-radius:5px;">📧 E-mail cliënt sturen</a>', unsafe_allow_html=True)
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
         df = pd.DataFrame(supabase.table("klachten").select("*").execute().data)
