@@ -98,7 +98,7 @@ with st.form("klacht_form", clear_on_submit=True):
     with col2:
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-    omschrijving = st.text_area("Omschrijving")
+    omschrijving = st.text_area("Omschrijving,Eventueel oplossing voorstel")
     upload = st.file_uploader("Upload bestand", type=['png', 'jpg', 'pdf'])
     
     if st.form_submit_button("Verstuur klacht"):
@@ -109,7 +109,7 @@ with st.form("klacht_form", clear_on_submit=True):
             "adres": woonadres,     # Hier wordt het woonadres opgeslagen
             "email": email, 
             "klachtensoort": soort, 
-            "omschrijving": omschrijving,Eventueel Oplossing voorstel
+            "omschrijving": omschrijving,
             "status": "Nieuw"
         }).execute()
         st.success("Verzonden!")
