@@ -99,7 +99,18 @@ with st.form("klacht_form", clear_on_submit=True):
     
     omschrijving = st.text_area("Omschrijving of oplossing")
     
+    # --- NIEUW: File uploader ---
+    uploaded_file = st.file_uploader("Upload foto of document (max 5MB)", type=['png', 'jpg', 'pdf'])
+    
     if st.form_submit_button("Verstuur klacht"):
+        file_path = None
+        # --- LOGICA VOOR OPSLAG ---
+        if uploaded_file is not None:
+            # Sla het bestand op in Supabase Storage
+            file_name = f"{id_nr}_{uploaded_file.name}"
+            supabase.storage.from_("klachten-bijlagen").upload(file_name, uploaded_file.getvalue())
+            file_path = file_name # Sla de naam op in de tabel zodat je de foto later kunt ophalen
+
         data_to_insert = {
             "volledige_naam": naam, 
             "id_nummer": id_nr, 
@@ -107,7 +118,8 @@ with st.form("klacht_form", clear_on_submit=True):
             "email": email, 
             "klachtensoort": soort, 
             "omschrijving": omschrijving, 
+            "bijlage_pad": file_path, # Zorg dat deze kolom bestaat in je tabel
             "status": "Nieuw"
         }
         supabase.table("klachten").insert(data_to_insert).execute()
-        st.success("Uw klacht is succesvol ingediend!")
+        st.success("Uw klacht inclusief bijlage is verzonden!")
