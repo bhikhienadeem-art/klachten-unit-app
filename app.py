@@ -19,13 +19,7 @@ st.markdown("""
     </style>
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div class="header-text">
-            Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum.<br>
-            Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen.
-        </div>
-        <div class="contact-info">
-            📍 <b>Adres:</b> Tawajarieweg 20 | 📞 <b>Tel:</b> (+597) 366660 | ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com
-        </div>
+        <div class="header-text">Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum.</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -53,28 +47,19 @@ with st.sidebar:
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
-        response = supabase.table("klachten").select("*").execute()
-        klachten = response.data
-        
+        klachten = supabase.table("klachten").select("*").execute().data
         for k in klachten:
             with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
                 st.write(f"**E-mail:** {k.get('email', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                if k.get('email'):
-                    st.markdown(f'<a href="mailto:{k["email"]}">📧 E-mail cliënt</a>', unsafe_allow_html=True)
 
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
-        response = supabase.table("klachten").select("*").execute()
-        df = pd.DataFrame(response.data)
-        
+        df = pd.DataFrame(supabase.table("klachten").select("*").execute().data)
         if not df.empty:
-            st.subheader("Verdeling per Klachtensoort")
-            fig = px.pie(df, names='klachtensoort', color_discrete_sequence=px.colors.qualitative.Pastel)
+            fig = px.pie(df, names='klachtensoort', title="Verdeling per Klachtensoort")
             st.plotly_chart(fig)
             st.dataframe(df)
-            
-            st.subheader("🗑️ Klacht Verwijderen")
             target_id = st.selectbox("Selecteer ID om te verwijderen", df['id'].tolist())
             if st.button("Verwijder geselecteerde klacht"):
                 supabase.table("klachten").delete().eq("id", target_id).execute()
@@ -82,45 +67,27 @@ if st.session_state.logged_in:
 
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Medewerkersbeheer")
-        
-        # Nieuwe medewerker toevoegen
         with st.expander("Nieuwe medewerker toevoegen"):
             with st.form("add_user"):
                 new_user = st.text_input("Gebruikersnaam")
-                new_pass = st.text_input("Wachtwoord", type="password") # Nieuw: Wachtwoord invoer
+                new_pass = st.text_input("Wachtwoord", type="password")
                 new_role = st.selectbox("Rol", ["admin", "editor", "viewer"])
                 if st.form_submit_button("Toevoegen"):
-                    supabase.table("medewerkers").insert({
-                        "gebruikersnaam": new_user, 
-                        "wachtwoord": new_pass, # Sla dit op in de database
-                        "rol": new_role
-                    }).execute()
-                    st.success(f"Medewerker {new_user} toegevoegd!")
+                    supabase.table("medewerkers").insert({"gebruikersnaam": new_user, "wachtwoord": new_pass, "rol": new_role}).execute()
+                    st.success("Medewerker toegevoegd!")
                     st.rerun()
 
-        # Medewerkers overzicht en verwijderen
         st.subheader("Huidige Medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
-        
         for m in medewerkers:
             cols = st.columns([2, 2, 1])
             cols[0].write(f"**{m['gebruikersnaam']}**")
             cols[1].write(f"Rol: {m['rol']}")
-            
-            # Verwijderen knop
             if cols[2].button("🗑️", key=f"del_{m['id']}"):
                 supabase.table("medewerkers").delete().eq("id", m['id']).execute()
                 st.rerun()
 
-        st.subheader("Huidige Medewerkers")
-        medewerkers = supabase.table("medewerkers").select("*").execute().data
-        
-        for m in medewerkers:
-            cols = st.columns([2, 1, 1])
-            cols[0].write(f"**{m['gebruikersnaam']}** ({m['rol']})")
-            if cols[2].button("🗑️", key=f"del_{m['id']}"):
-                supabase.table("medewerkers").delete().eq("id", m['id']).execute()
-                st.rerun()# --- FORMULIER (Voor iedereen zichtbaar) ---
+# --- FORMULIER ---
 st.divider()
 st.title("Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
@@ -132,30 +99,10 @@ with st.form("klacht_form", clear_on_submit=True):
     with col2:
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-    
     omschrijving = st.text_area("Omschrijving of oplossing")
-    
-    # --- NIEUW: File uploader ---
-    uploaded_file = st.file_uploader("Upload foto of document (max 5MB)", type=['png', 'jpg', 'pdf'])
-    
     if st.form_submit_button("Verstuur klacht"):
-        file_path = None
-        # --- LOGICA VOOR OPSLAG ---
-        if uploaded_file is not None:
-            # Sla het bestand op in Supabase Storage
-            file_name = f"{id_nr}_{uploaded_file.name}"
-            supabase.storage.from_("klachten-bijlagen").upload(file_name, uploaded_file.getvalue())
-            file_path = file_name # Sla de naam op in de tabel zodat je de foto later kunt ophalen
-
-        data_to_insert = {
-            "volledige_naam": naam, 
-            "id_nummer": id_nr, 
-            "adres": woonadres, 
-            "email": email, 
-            "klachtensoort": soort, 
-            "omschrijving": omschrijving, 
-            "bijlage_pad": file_path, # Zorg dat deze kolom bestaat in je tabel
-            "status": "Nieuw"
-        }
-        supabase.table("klachten").insert(data_to_insert).execute()
-        st.success("Uw klacht inclusief bijlage is verzonden!")
+        supabase.table("klachten").insert({
+            "volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, 
+            "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"
+        }).execute()
+        st.success("Uw klacht is verzonden!")
