@@ -51,36 +51,28 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    # Eerste item moet een 'if' zijn
+    # Begin de menustructuur met een 'if'
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
         klachten = supabase.table("klachten").select("*").execute().data
-        
         for k in klachten:
             with st.expander(f"Klacht: {k.get('volledige_naam')} - Status: {k.get('status')}"):
-                st.write(f"**ID:** {k.get('id')}")
-                st.write(f"**Adres:** {k.get('adres', '-')}")
                 st.write(f"**E-mail:** {k.get('email')}")
-                st.write(f"**Soort:** {k.get('klachtensoort')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving')}")
-                
-                notitie = st.text_area("Interne notitie", value=k.get('notitie', ''), key=f"note_{k['id']}")
-                if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
-                    supabase.table("klachten").update({"notitie": notitie}).eq("id", k['id']).execute()
-                    st.success("Notitie opgeslagen!")
-                
-                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
-                                           index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')),
-                                           key=f"status_{k['id']}")
-                if st.button("Update Status", key=f"update_{k['id']}"):
-                    supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
-                    st.success("Status bijgewerkt!")
-                    st.rerun()
-
-                if st.button("🗑️ Klacht verwijderen", key=f"del_{k['id']}"):
-                    supabase.table("klachten").delete().eq("id", k['id']).execute()
-                    st.rerun()
     
+    # Gebruik daarna 'elif' voor de andere menu-opties
+    elif st.session_state.menu == "Rapporten":
+        st.title("📈 Rapporten & Beheer")
+        data = supabase.table("klachten").select("*").execute().data
+        df = pd.DataFrame(data)
+        if not df.empty:
+            st.subheader("Verdeling per Klachtensoort")
+            fig = px.pie(df, names='klachtensoort', color_discrete_sequence=px.colors.qualitative.Pastel)
+            st.plotly_chart(fig)
+            st.dataframe(df)
+
+    elif st.session_state.menu == "Instellingen":
+        st.title("⚙️ Instellingen")    
     # Volgende items met 'elif'
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
