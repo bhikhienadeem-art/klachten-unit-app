@@ -52,42 +52,46 @@ with st.sidebar:
             
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    # Hier begint het Dashboard menu
+    # 4 spaties inspringen voor de menu check
     if st.session_state.menu == "Dashboard":
+        # 8 spaties inspringen voor de inhoud van het Dashboard
         st.title("📊 Dashboard")
         try:
             klachten = supabase.table("klachten").select("*").execute().data
             for k in klachten:
                 with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
-                    # Alle content hier moet 4 spaties extra inspringen
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write(f"**ID:** {k.get('id_nummer', '-')}")
                         st.write(f"**Naam:** {k.get('volledige_naam', '-')}")
+                        st.write(f"**E-mail:** {k.get('email', '-')}")
                     with col2:
                         st.write(f"**Adres:** {k.get('adres', '-')}")
                         st.write(f"**Soort:** {k.get('klachtensoort', '-')}")
-                    
                     st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                     
                     # E-mail knop
                     if k.get('email'):
-                        mail_link = f"mailto:{k['email']}?subject=Update klacht {k.get('id_nummer', '')}"
-                        st.markdown(f'<a href="{mail_link}" target="_blank" style="padding:10px; background:#004a99; color:white; border-radius:5px; text-decoration:none;">📧 E-mail cliënt</a>', unsafe_allow_html=True)
-
+                        mail_link = f"mailto:{k['email']}?subject=Update over uw klacht {k.get('id_nummer', '')}"
+                        st.markdown(f'<a href="{mail_link}" target="_blank" style="padding:10px; background:#004a99; color:white; border-radius:5px; text-decoration:none;">📧 E-mail verzenden naar cliënt</a>', unsafe_allow_html=True)
+                    
+                    notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+                    if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
+                        supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
+                        st.success("Notitie opgeslagen!")
         except Exception as e:
             st.error(f"Fout: {e}")
 
-    # Hier begint het Rapporten menu
+    # 4 spaties inspringen voor de andere menu opties
     elif st.session_state.menu == "Rapporten":
+        # 8 spaties inspringen
         st.title("📈 Rapporten")
         st.write("Hier komt de rapportage-logica.")
 
-    # Hier begint het Instellingen menu
     elif st.session_state.menu == "Instellingen":
+        # 8 spaties inspringen
         st.title("⚙️ Instellingen")
-        st.write("Hier komt het medewerkersbeheer.")
-# --- FORMULIER ---
+        st.write("Hier komt het medewerkersbeheer.")# --- FORMULIER ---
 st.divider()
 st.title("Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
