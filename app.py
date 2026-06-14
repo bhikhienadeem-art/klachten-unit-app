@@ -21,10 +21,10 @@ st.markdown("""
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
         <div class="header-text">
             Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum.<br>
-            Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen en, indien gewenst, een mogelijke oplossing voorstellen.
+            Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen.
         </div>
         <div class="contact-info">
-            📍 <b>Adres:</b> Tawajarieweg 20 | 📞 <b>Tel:</b> (+597) 366660/(+597) 366929 | 💬 <b>WhatsApp:</b> (+597) 8921062 | ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com
+            📍 <b>Adres:</b> Tawajarieweg 20 | 📞 <b>Tel:</b> (+597) 366660 | ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -51,48 +51,40 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    # Begin de menustructuur met een 'if'
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
-        klachten = supabase.table("klachten").select("*").execute().data
+        response = supabase.table("klachten").select("*").execute()
+        klachten = response.data
+        
         for k in klachten:
-            with st.expander(f"Klacht: {k.get('volledige_naam')} - Status: {k.get('status')}"):
-                st.write(f"**E-mail:** {k.get('email')}")
-                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
-    
-    # Gebruik daarna 'elif' voor de andere menu-opties
-    elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten & Beheer")
-        data = supabase.table("klachten").select("*").execute().data
-        df = pd.DataFrame(data)
-        if not df.empty:
-            st.subheader("Verdeling per Klachtensoort")
-            fig = px.pie(df, names='klachtensoort', color_discrete_sequence=px.colors.qualitative.Pastel)
-            st.plotly_chart(fig)
-            st.dataframe(df)
+            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
+                st.write(f"**E-mail:** {k.get('email', '-')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                if k.get('email'):
+                    st.markdown(f'<a href="mailto:{k["email"]}">📧 E-mail cliënt</a>', unsafe_allow_html=True)
 
-    elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen")    
-    # Volgende items met 'elif'
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
-        data = supabase.table("klachten").select("*").execute().data
-        df = pd.DataFrame(data)
+        response = supabase.table("klachten").select("*").execute()
+        df = pd.DataFrame(response.data)
+        
         if not df.empty:
             st.subheader("Verdeling per Klachtensoort")
             fig = px.pie(df, names='klachtensoort', color_discrete_sequence=px.colors.qualitative.Pastel)
             st.plotly_chart(fig)
             st.dataframe(df)
+            
             st.subheader("🗑️ Klacht Verwijderen")
-            target_id = st.selectbox("Selecteer ID", df['id'].tolist())
-            if st.button("Verwijder"):
+            target_id = st.selectbox("Selecteer ID om te verwijderen", df['id'].tolist())
+            if st.button("Verwijder geselecteerde klacht"):
                 supabase.table("klachten").delete().eq("id", target_id).execute()
                 st.rerun()
 
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen")
+        st.write("Beheeromgeving voor medewerkers.")
 
-# --- FORMULIER ---
+# --- FORMULIER (Voor iedereen zichtbaar) ---
 st.divider()
 st.title("Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
@@ -104,10 +96,11 @@ with st.form("klacht_form", clear_on_submit=True):
     with col2:
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-    omschrijving = st.text_area("Omschrijving, Eventueel oplossing voorstel")
+    
+    omschrijving = st.text_area("Omschrijving of oplossing")
     
     if st.form_submit_button("Verstuur klacht"):
-        supabase.table("klachten").insert({
+        data_to_insert = {
             "volledige_naam": naam, 
             "id_nummer": id_nr, 
             "adres": woonadres, 
@@ -115,5 +108,6 @@ with st.form("klacht_form", clear_on_submit=True):
             "klachtensoort": soort, 
             "omschrijving": omschrijving, 
             "status": "Nieuw"
-        }).execute()
-        st.success("Verzonden!")
+        }
+        supabase.table("klachten").insert(data_to_insert).execute()
+        st.success("Uw klacht is succesvol ingediend!")
