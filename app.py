@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from supabase import create_client
 
 # --- CONFIGURATIE ---
@@ -27,10 +28,11 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- LOGIN & UITLOG LOGICA ---
+# --- LOGIN & NAVIGATIE ---
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
 
+menu = "Dashboard"
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
     if not st.session_state.logged_in:
@@ -44,53 +46,51 @@ with st.sidebar:
                 st.error("Ongeldige gegevens")
     else:
         st.success("Ingelogd als Admin")
+        menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
 
-# --- DASHBOARD (Alleen voor admins) ---
+# --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    st.title("📊 Dashboard")
-    try:
-        klachten = supabase.table("klachten").select("*").execute().data
-        for k in klachten:
-            # Weergave van alle gegevens
-            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(f"**ID:** {k.get('id_nummer', '-')}")
-                    st.write(f"**Naam:** {k.get('volledige_naam', '-')}")
-                    st.write(f"**E-mail:** {k.get('email', '-')}")
-                with col2:
-                    st.write(f"**Telefoon:** {k.get('telefoon_whatsapp', '-')}")
-                    st.write(f"**Adres:** {k.get('adres', '-')}")
-                    st.write(f"**Soort:** {k.get('klachtensoort', '-')}")
-                
-                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                
-                # Interne notitie
-                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
-                if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
-                    supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
-                    st.success("Notitie opgeslagen!")
-                
-                # Status update
-                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                huidige_status = k.get('status', 'Nieuw')
-                nieuwe_status = st.selectbox("Status", status_opties, index=status_opties.index(huidige_status) if huidige_status in status_opties else 0, key=f"status_{k['id']}")
-                if st.button("Update Status", key=f"upd_{k['id']}"):
-                    supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
-                    st.rerun()
-                
-                # E-mail verzenden knop (opent standaard mail client)
-                if k.get('email'):
-                    mail_link = f"mailto:{k['email']}?subject=Update over uw klacht {k.get('id_nummer', '')}&body=Beste {k.get('volledige_naam', 'cliënt')},%0A%0AHierbij een update over uw klacht..."
-                    st.markdown(f'<a href="{mail_link}" target="_blank" style="padding:10px; background:#004a99; color:white; border-radius:5px; text-decoration:none;">📧 E-mail verzenden naar cliënt</a>', unsafe_allow_html=True)
-                else:
-                    st.warning("Geen e-mailadres beschikbaar voor deze cliënt.")
+    if menu == "Dashboard":
+        st.title("📊 Dashboard")
+        try:
+            klachten = supabase.table("klachten").select("*").execute().data
+            for k in klachten:
+                with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**ID:** {k.get('id_nummer', '-')}")
+                        st.write(f"**Naam:** {k.get('volledige_naam', '-')}")
+                        st.write(f"**E-mail:** {k.get('email', '-')}")
+                    with col2:
+                        st.write(f"**Adres:** {k.get('adres', '-')}")
+                        st.write(f"**Soort:** {k.get('klachtensoort', '-')}")
+                    st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                    
+                    notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+                    if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
+                        supabase.table("klachten").update({"interne_notitie": notitie}).eq("id", k['id']).execute()
+                        st.success("Notitie opgeslagen!")
+                    
+                    status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                    huidige_status = k.get('status', 'Nieuw')
+                    nieuwe_status = st.selectbox("Status", status_opties, index=status_opties.index(huidige_status) if huidige_status in status_opties else 0, key=f"status_{k['id']}")
+                    if st.button("Update Status", key=f"upd_{k['id']}"):
+                        supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                        st.rerun()
+        except Exception as e:
+            st.error(f"Fout: {e}")
 
-    except Exception as e:
-        st.error(f"Fout bij het laden van het dashboard: {e}")
+    elif menu == "Rapporten":
+        st.title("📈 Rapporten")
+        st.write("Visualisatie van klachten...")
+
+    elif menu == "Instellingen":
+        st.title("⚙️ Instellingen - Gebruikersbeheer")
+        # Hier kun je de code voor het verwijderen/toevoegen medewerkers plaatsen
+
 # --- FORMULIER ---
 st.divider()
 st.title("Klacht indienen")
@@ -99,22 +99,16 @@ with st.form("klacht_form", clear_on_submit=True):
     with col1:
         naam = st.text_input("Volledige naam")
         id_nr = st.text_input("ID Nummer")
-        woonadres = st.text_input("Woonadres")  # Dit veld is toegevoegd
+        woonadres = st.text_input("Woonadres")
     with col2:
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-    omschrijving = st.text_area("Omschrijving,Eventueel oplossing voorstel")
+    omschrijving = st.text_area("Omschrijving, Eventueel oplossing voorstel")
     upload = st.file_uploader("Upload bestand", type=['png', 'jpg', 'pdf'])
     
     if st.form_submit_button("Verstuur klacht"):
-        # Zorg dat 'adres' overeenkomt met de kolomnaam in je Supabase tabel
         supabase.table("klachten").insert({
-            "volledige_naam": naam, 
-            "id_nummer": id_nr, 
-            "adres": woonadres,     # Hier wordt het woonadres opgeslagen
-            "email": email, 
-            "klachtensoort": soort, 
-            "omschrijving": omschrijving,
-            "status": "Nieuw"
+            "volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, 
+            "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"
         }).execute()
         st.success("Verzonden!")
