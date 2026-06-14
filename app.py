@@ -85,7 +85,7 @@ if st.session_state.logged_in:
                     supabase.table("klachten").update({"status": nieuwe}).eq("id", k['id']).execute()
                     st.rerun()
 
-    elif st.session_state.menu == "Rapporten":
+   elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
         
         # 1. Data ophalen
@@ -93,10 +93,17 @@ if st.session_state.logged_in:
         df = pd.DataFrame(klachten_data)
         
         if not df.empty:
-            # 2. Visuele Grafiek (Taartdiagram)
-            st.subheader("Klachten per Status")
-            status_counts = df['status'].value_counts()
-            st.bar_chart(status_counts) # Je kunt ook st.pie_chart gebruiken
+            # 2. Visuele Grafiek (Cirkelgrafiek zoals gevraagd)
+            st.subheader("Verdeling per Klachtensoort")
+            
+            # Bereken de verdeling
+            soort_counts = df['klachtensoort'].value_counts()
+            
+            # Maak een interactieve cirkelgrafiek
+            import plotly.express as px
+            fig = px.pie(values=soort_counts.values, names=soort_counts.index, 
+                         color_discrete_sequence=px.colors.qualitative.Pastel)
+            st.plotly_chart(fig, use_container_width=True)
             
             # 3. Tabel met alle gegevens
             st.subheader("Alle Klachten Overzicht")
@@ -105,6 +112,7 @@ if st.session_state.logged_in:
             # 4. Verwijder functie
             st.divider()
             st.subheader("🗑️ Klacht Verwijderen")
+            # We gebruiken het ID om te verwijderen
             klacht_id_te_verwijderen = st.selectbox("Selecteer ID om te verwijderen", df['id'].tolist())
             if st.button("Verwijder geselecteerde klacht"):
                 supabase.table("klachten").delete().eq("id", klacht_id_te_verwijderen).execute()
@@ -115,12 +123,9 @@ if st.session_state.logged_in:
             st.divider()
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("💾 Rapport downloaden (CSV)", csv, "klachten_rapport.csv", "text/csv")
-            st.info("💡 Tip: Gebruik CTRL+P om deze pagina af te drukken als PDF.")
+            st.info("💡 Tip: Gebruik CTRL+P om deze pagina af te drukken.")
         else:
             st.write("Geen klachten gevonden.")
-    elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen")
-
 # --- FORMULIER (Altijd zichtbaar) ---
 st.divider()
 st.title("Klacht indienen")
