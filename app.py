@@ -19,7 +19,13 @@ st.markdown("""
     </style>
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div class="header-text">Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum.</div>
+        <div class="header-text">
+            Welkom op de pagina van het Klachtenunit van het Commissariaat Wanica Centrum.<br>
+            Wij vinden het belangrijk dat uw stem gehoord wordt. Via deze pagina kunt u uw klacht of opmerking indienen.
+        </div>
+        <div class="contact-info">
+            📍 <b>Adres:</b> Tawajarieweg 20 | 📞 <b>Tel:</b> (+597) 366660 | ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -47,11 +53,15 @@ with st.sidebar:
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
-        klachten = supabase.table("klachten").select("*").execute().data
+        response = supabase.table("klachten").select("*").execute()
+        klachten = response.data
+        
         for k in klachten:
             with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
                 st.write(f"**E-mail:** {k.get('email', '-')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                if k.get('email'):
+                    st.markdown(f'<a href="mailto:{k["email"]}">📧 E-mail cliënt</a>', unsafe_allow_html=True)
 
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
