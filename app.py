@@ -125,7 +125,7 @@ if st.session_state.logged_in:
             st.download_button("💾 Rapport downloaden (CSV)", csv, "klachten_rapport.csv", "text/csv")
             st.info("💡 Tip: Gebruik CTRL+P om deze pagina af te drukken.")
         else:
-            st.write("Geen klachten gevonden.")
+            st.write("Geen klachten gevonden.")            st.write("Geen klachten gevonden.")
 # --- FORMULIER (Altijd zichtbaar) ---
 st.divider()
 st.title("Klacht indienen")
