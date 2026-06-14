@@ -51,26 +51,24 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    elif st.session_state.menu == "Dashboard":
+    # Eerste item moet een 'if' zijn
+    if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
         klachten = supabase.table("klachten").select("*").execute().data
         
         for k in klachten:
             with st.expander(f"Klacht: {k.get('volledige_naam')} - Status: {k.get('status')}"):
-                # 1. Alle gegevens tonen
                 st.write(f"**ID:** {k.get('id')}")
                 st.write(f"**Adres:** {k.get('adres', '-')}")
                 st.write(f"**E-mail:** {k.get('email')}")
                 st.write(f"**Soort:** {k.get('klachtensoort')}")
                 st.write(f"**Omschrijving:** {k.get('omschrijving')}")
                 
-                # 2. Interne notitie toevoegen
                 notitie = st.text_area("Interne notitie", value=k.get('notitie', ''), key=f"note_{k['id']}")
                 if st.button("Opslaan Notitie", key=f"save_{k['id']}"):
                     supabase.table("klachten").update({"notitie": notitie}).eq("id", k['id']).execute()
                     st.success("Notitie opgeslagen!")
                 
-                # 3. Status bewerken
                 nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
                                            index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')),
                                            key=f"status_{k['id']}")
@@ -79,10 +77,11 @@ if st.session_state.logged_in:
                     st.success("Status bijgewerkt!")
                     st.rerun()
 
-                # 4. Verwijderen
                 if st.button("🗑️ Klacht verwijderen", key=f"del_{k['id']}"):
                     supabase.table("klachten").delete().eq("id", k['id']).execute()
                     st.rerun()
+    
+    # Volgende items met 'elif'
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
         data = supabase.table("klachten").select("*").execute().data
@@ -109,22 +108,20 @@ with st.form("klacht_form", clear_on_submit=True):
     with col1:
         naam = st.text_input("Volledige naam")
         id_nr = st.text_input("ID Nummer")
-        woonadres = st.text_input("Woonadres")  # Dit veld is toegevoegd
+        woonadres = st.text_input("Woonadres")
     with col2:
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-    omschrijving = st.text_area("Omschrijving,Eventueel oplossing voorstel")
-    upload = st.file_uploader("Upload bestand", type=['png', 'jpg', 'pdf'])
+    omschrijving = st.text_area("Omschrijving, Eventueel oplossing voorstel")
     
     if st.form_submit_button("Verstuur klacht"):
-        # Zorg dat 'adres' overeenkomt met de kolomnaam in je Supabase tabel
         supabase.table("klachten").insert({
             "volledige_naam": naam, 
             "id_nummer": id_nr, 
-            "adres": woonadres,     # Hier wordt het woonadres opgeslagen
+            "adres": woonadres, 
             "email": email, 
             "klachtensoort": soort, 
-            "omschrijving": omschrijving,
+            "omschrijving": omschrijving, 
             "status": "Nieuw"
         }).execute()
         st.success("Verzonden!")
