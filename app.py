@@ -51,11 +51,45 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard")
+   if st.session_state.menu == "Dashboard":
+        st.title("📊 Dashboard - Klachtenbeheer")
         response = supabase.table("klachten").select("*").execute()
         klachten = response.data
         
+        for k in klachten:
+            with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
+                # Weergave gegevens
+                col_a, col_b = st.columns(2)
+                col_a.write(f"**ID Nummer:** {k.get('id_nummer', '-')}")
+                col_a.write(f"**Adres:** {k.get('adres', '-')}")
+                col_b.write(f"**E-mail:** {k.get('email', '-')}")
+                col_b.write(f"**Soort:** {k.get('klachtensoort', '-')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                
+                st.divider()
+                
+                # Acties: Status wijzigen
+                nieuwe_status = st.selectbox(
+                    "Status bijwerken", 
+                    ["Nieuw", "In behandeling", "Afgehandeld"], 
+                    index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')),
+                    key=f"status_{k['id']}"
+                )
+                
+                # Interne notitie
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+                
+                if st.button("Opslaan wijzigingen", key=f"save_{k['id']}"):
+                    supabase.table("klachten").update({
+                        "status": nieuwe_status,
+                        "interne_notitie": notitie
+                    }).eq("id", k['id']).execute()
+                    st.success("Bijgewerkt!")
+                    st.rerun()
+
+                # Email actie
+                if k.get('email'):
+                    st.markdown(f'<a href="mailto:{k["email"]}?subject=Update over uw klacht bij Wanica Centrum&body=Geachte {k.get("volledige_naam")}, naar aanleiding van uw klacht..." style="text-decoration:none; color:white; background-color:#004a99; padding:10px; border-radius:5px;">📧 E-mail cliënt sturen</a>', unsafe_allow_html=True)     
         for k in klachten:
             with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
                 st.write(f"**E-mail:** {k.get('email', '-')}")
