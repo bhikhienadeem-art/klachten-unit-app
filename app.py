@@ -51,14 +51,13 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-if st.session_state.menu == "Dashboard":
+    if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
         response = supabase.table("klachten").select("*").execute()
         klachten = response.data
         
         for k in klachten:
             with st.expander(f"Klacht: {k.get('volledige_naam', 'Anoniem')} - Status: {k.get('status', 'Nieuw')}"):
-                # Weergave gegevens
                 col_a, col_b = st.columns(2)
                 col_a.write(f"**ID Nummer:** {k.get('id_nummer', '-')}")
                 col_a.write(f"**Adres:** {k.get('adres', '-')}")
@@ -67,42 +66,26 @@ if st.session_state.menu == "Dashboard":
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                 
                 st.divider()
-                
-                # Acties: Status wijzigen
-                # Zorg dat de lijst overeenkomt met je database waarden
                 status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
                 huidige_status = k.get('status', 'Nieuw')
-                
-                # Zorg dat de index veilig is (default naar 0 als status niet in lijst staat)
                 idx = status_opties.index(huidige_status) if huidige_status in status_opties else 0
                 
-                nieuwe_status = st.selectbox(
-                    "Status bijwerken", 
-                    status_opties, 
-                    index=idx,
-                    key=f"status_{k['id']}"
-                )
-                
-                # Interne notitie
+                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=idx, key=f"status_{k['id']}")
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
                 
                 if st.button("Opslaan wijzigingen", key=f"save_{k['id']}"):
-                    supabase.table("klachten").update({
-                        "status": nieuwe_status,
-                        "interne_notitie": notitie
-                    }).eq("id", k['id']).execute()
+                    supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", k['id']).execute()
                     st.success("Bijgewerkt!")
                     st.rerun()
 
-                # Email actie
                 if k.get('email'):
-                    subject = "Update over uw klacht bij Wanica Centrum"
-                    body = f"Geachte {k.get('volledige_naam')}, naar aanleiding van uw klacht..."
-                    st.markdown(f'<a href="mailto:{k["email"]}?subject={subject}&body={body}" style="text-decoration:none; color:white; background-color:#004a99; padding:10px; border-radius:5px;">📧 E-mail cliënt sturen</a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="mailto:{k["email"]}?subject=Update klacht&body=Geachte {k.get("volledige_naam")}" style="text-decoration:none; color:white; background-color:#004a99; padding:10px; border-radius:5px;">📧 E-mail cliënt</a>', unsafe_allow_html=True)
+
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Beheer")
-        df = pd.DataFrame(supabase.table("klachten").select("*").execute().data)
-        if not df.empty:
+        data = supabase.table("klachten").select("*").execute().data
+        if data:
+            df = pd.DataFrame(data)
             fig = px.pie(df, names='klachtensoort', title="Verdeling per Klachtensoort")
             st.plotly_chart(fig)
             st.dataframe(df)
@@ -122,7 +105,7 @@ if st.session_state.menu == "Dashboard":
                     supabase.table("medewerkers").insert({"gebruikersnaam": new_user, "wachtwoord": new_pass, "rol": new_role}).execute()
                     st.success("Medewerker toegevoegd!")
                     st.rerun()
-
+        
         st.subheader("Huidige Medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
         for m in medewerkers:
@@ -147,8 +130,5 @@ with st.form("klacht_form", clear_on_submit=True):
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
     omschrijving = st.text_area("Omschrijving of oplossing")
     if st.form_submit_button("Verstuur klacht"):
-        supabase.table("klachten").insert({
-            "volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, 
-            "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"
-        }).execute()
+        supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
         st.success("Uw klacht is verzonden!")
