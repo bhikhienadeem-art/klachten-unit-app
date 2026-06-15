@@ -155,3 +155,5 @@ if st.session_state.logged_in:
                 st.success("✅ Verzonden!")
             except Exception as e:
                 st.error(f"Fout bij verzenden: {e}")
+            except Exception as e:
+                st.error(f"Fout bij verzenden: {e}")
