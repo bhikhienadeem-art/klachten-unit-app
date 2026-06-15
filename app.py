@@ -106,7 +106,8 @@ if st.session_state.logged_in:
                 st.rerun()
 
 else:
-    # --- FORMULIER ---
+   # --- FORMULIER (Vervang je huidige else-blok met dit) ---
+else:
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -117,42 +118,32 @@ else:
         email = col2.text_input("📧 E-mailadres")
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("📝 Omschrijving")
+        
         uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
         
-        # --- NIEUW: AFSPRAAK CALENDAR ---
         st.write("---")
         st.subheader("🤝 Afspraak maken (Optioneel)")
-        wil_afspraak = st.checkbox("Ik wil een afspraak maken (Ma-Vr, 08:00 - 14:00)")
+        wil_afspraak = st.checkbox("Ik wil een afspraak maken")
         
         afspraak_datum = None
         afspraak_tijd = None
-        
         if wil_afspraak:
-            col_a, col_b = st.columns(2)
-            afspraak_datum = col_a.date_input("Kies datum")
-            afspraak_tijd = col_b.time_input("Kies tijd", value=time(8, 0))
-            
-            # Valideer dag (ma-vr) en tijd (08-14)
-            if afspraak_datum.weekday() >= 5:
-                st.error("Afspraken zijn alleen mogelijk op maandag t/m vrijdag.")
-            elif afspraak_tijd.hour < 8 or afspraak_tijd.hour >= 14:
-                st.error("Afspraken zijn alleen mogelijk tussen 08:00 en 14:00 uur.")
+            afspraak_datum = st.date_input("Kies datum")
+            afspraak_tijd = st.time_input("Kies tijd (08:00 - 14:00)")
+
+        submit = st.form_submit_button("Verstuur")
         
-       if st.form_submit_button("Verstuur"):
+        if submit:
             file_url = None
-            
-            # 1. Bestand uploaden (zorg dat bucket 'bijlagen' bestaat in Supabase Storage)
             if uploaded_file is not None:
                 try:
                     file_path = f"bijlagen/{uploaded_file.name}"
                     supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
                     file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
                 except Exception as e:
-                    st.error(f"Upload fout: {e}")
+                    st.error(f"Fout bij uploaden bestand: {e}")
 
-            # 2. Database insert
             try:
-                # Let op: de keys hieronder MOETEN exact overeenkomen met je tabel-headers
                 data = {
                     "volledige_naam": naam,
                     "id_nummer": id_nr,
@@ -166,10 +157,7 @@ else:
                     "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
                     "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None
                 }
-                
-                # Verwijder keys uit 'data' als de kolom niet bestaat in je tabel
-                response = supabase.table("klachten").insert(data).execute()
-                st.success("✅ Klacht succesvol verstuurd!")
-                
+                supabase.table("klachten").insert(data).execute()
+                st.success("✅ Klacht succesvol verzonden!")
             except Exception as e:
                 st.error(f"Database fout: {e}")
