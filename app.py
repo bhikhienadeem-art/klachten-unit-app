@@ -21,13 +21,10 @@ st.markdown("""
     [data-testid="stForm"] { background-color: #e3f2fd; border: 2px solid #004a99; padding: 25px; border-radius: 10px; }
     .stTextInput input, .stTextArea textarea { color: black !important; }
     div.stButton > button { background-color: #004a99; color: white !important; border-radius: 5px; }
-    /* Kalender styling */
-    [data-testid="stDateInput"] input { background-color: white !important; }
-    [data-testid="stSelectbox"] div[data-baseweb="select"] { background-color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER ---
+# --- HEADER MET GEGEVENS ---
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
@@ -59,105 +56,66 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard - Klachtenbeheer")
-        klachten = supabase.table("klachten").select("*").execute().data
-        for k in klachten:
-            with st.expander(f"👤 Klacht: {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
-                col_a, col_b = st.columns(2)
-                col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
-                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon', '-')}")
-                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
-                col_b.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
-                col_b.write(f"**📅 Afspraak:** {k.get('afspraak_datum', 'Geen')} om {k.get('afspraak_tijd', '-')}")
-                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                if k.get('bijlage_url'): st.info(f"📎 Bijlage: {k['bijlage_url']}")
-                
-                st.divider()
-                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                huidige_status = k.get('status', 'Nieuw')
-                idx = status_opties.index(huidige_status) if huidige_status in status_opties else 0
-                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=idx, key=f"status_{k['id']}")
-                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
-                if st.button("💾 Opslaan", key=f"save_{k['id']}"):
-                    supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", k['id']).execute()
-                    st.rerun()
-
-    elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten & Analyse")
-        data = supabase.table("klachten").select("*").execute().data
-        if data:
-            df = pd.DataFrame(data)
-            fig = px.pie(df, names='klachtensoort', title="Verdeling klachtensoort")
-            st.plotly_chart(fig)
-            st.dataframe(df)
+  if st.session_state.menu == "Dashboard":
+    st.title("📊 Dashboard - Klachtenbeheer")
+    klachten = supabase.table("klachten").select("*").execute().data
+    for k in klachten:
+        with st.expander(f"👤 {k.get('volledige_naam')} | Status: {k.get('status', 'Nieuw')}"):
+            # ... (jouw bestaande kolommen en info)
+            if st.button("🗑️ Klacht verwijderen", key=f"del_{k['id']}"):
+                supabase.table("klachten").delete().eq("id", k['id']).execute()
+                st.rerun()
 
     elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen - Beheer")
-        with st.expander("➕ Medewerker toevoegen"):
-            with st.form("add_user"):
-                u = st.text_input("Gebruikersnaam")
-                p = st.text_input("Wachtwoord", type="password")
-                if st.form_submit_button("Toevoegen"):
-                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
-                    st.success("Toegevoegd!")
+    st.title("⚙️ Instellingen - Beheer")
+    
+    # 1. Medewerker toevoegen
+    with st.expander("➕ Medewerker toevoegen"):
+        with st.form("add_user"):
+            u = st.text_input("Gebruikersnaam")
+            p = st.text_input("Wachtwoord", type="password")
+            if st.form_submit_button("Toevoegen"):
+                supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
+                st.success("Toegevoegd!")
+    
+    # 2. Medewerkers verwijderen
+    st.subheader("👥 Medewerkers beheren")
+    medewerkers = supabase.table("medewerkers").select("*").execute().data
+    for m in medewerkers:
+        col1, col2 = st.columns([3, 1])
+        col1.write(f"Gebruiker: {m['gebruikersnaam']}")
+        if col2.button("❌", key=f"del_user_{m['id']}"):
+            supabase.table("medewerkers").delete().eq("id", m['id']).execute()
+            st.rerun()
 
 # --- FORMULIER ---
-    st.divider()
-    st.subheader("📝 Klacht indienen")
+st.divider()
+st.subheader("📝 Klacht indienen")
+with st.form("klacht_form", clear_on_submit=True):
+    c1, c2 = st.columns(2)
+    naam = c1.text_input("👤 Volledige naam")
+    id_nr = c1.text_input("🆔 ID Nummer")
+    telefoon = c1.text_input("📞 Telefoon/WhatsApp")
+    woonadres = c1.text_input("🏠 Woonadres")
+    email = c2.text_input("📧 E-mailadres")
+    soort = c2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+    omschrijving = st.text_area("📝 Omschrijving")
     
-    with st.form("klacht_form_totaal", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            naam = st.text_input("👤 Volledige naam")
-            id_nr = st.text_input("🆔 ID Nummer")
-            telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
-            woonadres = st.text_input("🏠 Woonadres")
-        with col2:
-            email = st.text_input("📧 E-mailadres")
-            soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-            uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
-            
-        omschrijving = st.text_area("📝 Omschrijving klacht")
-
-        # Optionele Afspraak
-        st.divider()
-        wil_afspraak = st.checkbox("📅 Ik wil indien nodig een afspraak maken")
+    st.divider()
+    wil_afspraak = st.checkbox("📅 Ik wil indien nodig een afspraak maken")
+    if wil_afspraak:
+        ca1, ca2 = st.columns(2)
+        afspraak_datum = ca1.date_input("Kies datum")
+        tijden = [f"{h:02d}:{m:02d}" for h in range(8, 14) for m in [0, 15, 30, 45]] + ["14:00"]
+        afspraak_tijd = ca2.selectbox("Kies tijdstip", tijden)
+    else:
+        afspraak_datum, afspraak_tijd = None, None
         
-        afspraak_datum = None
-        afspraak_tijd = None
-        
-        if wil_afspraak:
-            col_cal1, col_cal2 = st.columns(2)
-            with col_cal1:
-                afspraak_datum = st.date_input("Kies datum")
-            with col_cal2:
-                tijden = [f"{h:02d}:{m:02d}" for h in range(8, 14) for m in [0, 15, 30, 45]] + ["14:00"]
-                afspraak_tijd = st.selectbox("Kies tijdstip", tijden)
-        
-        submit = st.form_submit_button("Verstuur klacht")
-
-    if submit:
-        # We dwingen alle data naar string formaat om API fouten te voorkomen
-        insert_data = {
-            "volledige_naam": str(naam),
-            "id_nummer": str(id_nr),
-            "telefoon": str(telefoon),
-            "adres": str(woonadres),
-            "email": str(email),
-            "klachtensoort": str(soort),
-            "omschrijving": str(omschrijving),
-            "status": "Nieuw",
-            "bijlage_url": str(uploaded_file.name) if uploaded_file else None,
-            "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
+    if st.form_submit_button("Verstuur klacht"):
+        supabase.table("klachten").insert({
+            "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
+            "email": email, "klachtensoort": soort, "omschrijving": omschrijving, 
+            "status": "Nieuw", "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
             "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None
-        }
-        
-        try:
-            supabase.table("klachten").insert(insert_data).execute()
-            st.success("✅ Uw klacht is succesvol verzonden!")
-        except Exception as e:
-            st.error(f"Fout bij opslaan: {e}")
-        except Exception as e:
-            st.error(f"Fout bij opslaan: {e}")
+        }).execute()
+        st.success("✅ Uw klacht is succesvol verzonden!")
