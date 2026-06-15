@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from supabase import create_client
 from datetime import datetime
-import uuid # Nodig voor ticket_id
+import uuid 
 
 # 1. MOET ALTIJD ALS EERSTE
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
@@ -23,18 +23,14 @@ st.markdown("""
     .stApp { background-color: #e3f2fd; }
     .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
     </style>
-""", unsafe_html=True)
+""", unsafe_allow_html=True)
 
 # --- HEADER ---
 col_logo, col_text = st.columns([1, 4]) 
 with col_logo:
     st.image("orgineel logo Centrum.png", width=150)
 with col_text:
-    st.markdown("""
-        <div class="header-bar">
-            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1></div>', unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -54,13 +50,46 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    # Hier komt je dashboard code (zoals je al had)
-    st.title(f"📊 {st.session_state.menu}")
-    # ... (rest van je dashboard logica)
+    if st.session_state.menu == "Dashboard":
+        st.title("📊 Dashboard - Klachtenbeheer")
+        
+        # Data ophalen
+        klachten = supabase.table("klachten").select("*").execute().data
+        
+        if klachten:
+            # --- KLACHTEN LIJST MET PRIORITEIT ---
+            for k in klachten:
+                status = k.get('status', 'Nieuw')
+                soort = k.get('klachtensoort', 'Anders')
+                
+                # Prioriteit bepalen
+                if soort == "Wateroverlast": prio_label = "🔴 HOOG"
+                elif soort == "Wegen": prio_label = "🟠 MEDIUM"
+                else: prio_label = "🟢 LAAG"
+                    
+                with st.expander(f"{prio_label} | 👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {soort} | Status: {status}"):
+                    col_a, col_b = st.columns(2)
+                    col_a.write(f"**🆔 Ticket:** {k.get('ticket_id', '-')}")
+                    col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                    col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
+                    col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                    
+                    st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                    
+                    st.markdown("---")
+                    status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                    huidige_idx = status_opties.index(status) if status in status_opties else 0
+                    nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{k['id']}")
+                    
+                    if st.button("💾 Opslaan", key=f"save_{k['id']}"):
+                        supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                        st.rerun()
+        else:
+            st.info("Geen klachten gevonden.")
+
 else:
     # --- BURGERS PAGINA ---
     st.subheader("📝 Klacht indienen")
-    
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         naam = col1.text_input("👤 Volledige naam")
@@ -70,36 +99,21 @@ else:
         email = col2.text_input("📧 E-mailadres")
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("📝 Omschrijving")
-        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
         
         if st.form_submit_button("Verstuur Klacht"):
-            # Ticket ID genereren
             ticket_nr = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
-            
-            try:
-                data = {
-                    "volledige_naam": naam,
-                    "id_nummer": id_nr,
-                    "telefoon_whatsapp": telefoon,
-                    "adres": woonadres,
-                    "email": email,
-                    "klachtensoort": soort,
-                    "omschrijving": omschrijving,
-                    "status": "Nieuw",
-                    "ticket_id": ticket_nr # Ticket toegevoegd
-                }
-                supabase.table("klachten").insert(data).execute()
-                st.success(f"✅ Klacht verzonden! Uw ticketnummer is: {ticket_nr}")
-            except Exception as e:
-                st.error(f"Fout bij verzenden: {e}")
+            data = {
+                "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
+                "adres": woonadres, "email": email, "klachtensoort": soort,
+                "omschrijving": omschrijving, "status": "Nieuw", "ticket_id": ticket_nr
+            }
+            supabase.table("klachten").insert(data).execute()
+            st.success(f"✅ Klacht verzonden! Uw ticketnummer: {ticket_nr}")
 
-    st.markdown("---") 
-
-    st.subheader("🗓️ Indien nodig afspraak maken")
+    st.markdown("---")
+    st.subheader("🗓️ Afspraak maken")
     with st.form("afspraak_form", clear_on_submit=True):
-        naam_af = st.text_input("Uw Naam voor afspraak")
+        naam_af = st.text_input("Uw Naam")
         datum = st.date_input("Datum")
-        tijd = st.selectbox("Tijdstip", ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00"])
-        
         if st.form_submit_button("Afspraak Bevestigen"):
-            st.success(f"✅ Afspraak op {datum} om {tijd} bevestigd!")
+            st.success("✅ Afspraak bevestigd!")
