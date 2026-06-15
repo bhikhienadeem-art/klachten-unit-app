@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from supabase import create_client
+from datetime import datetime, time
 
 # --- CONFIGURATIE ---
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
@@ -116,26 +117,38 @@ else:
         email = col2.text_input("📧 E-mailadres")
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("📝 Omschrijving")
-        
-        # NIEUW: File uploader toevoegen
         uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
+        
+        # --- NIEUW: AFSPRAAK CALENDAR ---
+        st.write("---")
+        st.subheader("🤝 Afspraak maken (Optioneel)")
+        wil_afspraak = st.checkbox("Ik wil een afspraak maken (Ma-Vr, 08:00 - 14:00)")
+        
+        afspraak_datum = None
+        afspraak_tijd = None
+        
+        if wil_afspraak:
+            col_a, col_b = st.columns(2)
+            afspraak_datum = col_a.date_input("Kies datum")
+            afspraak_tijd = col_b.time_input("Kies tijd", value=time(8, 0))
+            
+            # Valideer dag (ma-vr) en tijd (08-14)
+            if afspraak_datum.weekday() >= 5:
+                st.error("Afspraken zijn alleen mogelijk op maandag t/m vrijdag.")
+            elif afspraak_tijd.hour < 8 or afspraak_tijd.hour >= 14:
+                st.error("Afspraken zijn alleen mogelijk tussen 08:00 en 14:00 uur.")
         
         if st.form_submit_button("Verstuur"):
             file_url = None
-            
-            # Bestand uploaden naar Storage als er een bestand is gekozen
             if uploaded_file is not None:
                 file_path = f"bijlagen/{uploaded_file.name}"
                 try:
-                    # Upload naar Supabase Storage
                     supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
-                    # Haal de publieke URL op
                     file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
                 except Exception as e:
                     st.error(f"Fout bij uploaden bestand: {e}")
 
             try:
-                # Opslaan in de 'klachten' tabel
                 data = {
                     "volledige_naam": naam,
                     "id_nummer": id_nr,
@@ -145,9 +158,11 @@ else:
                     "klachtensoort": soort,
                     "omschrijving": omschrijving,
                     "status": "Nieuw",
-                    "bijlage_url": file_url # Sla de link op in je database
+                    "bijlage_url": file_url,
+                    "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
+                    "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None
                 }
                 supabase.table("klachten").insert(data).execute()
-                st.success("✅ Klacht inclusief bijlage verzonden!")
+                st.success("✅ Klacht en eventuele afspraak verzonden!")
             except Exception as e:
-                st.error(f"Fout bij verzenden naar database: {e}")
+                st.error(f"Fout bij verzenden: {e}")
