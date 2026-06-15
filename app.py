@@ -104,54 +104,58 @@ if st.session_state.logged_in:
                     st.success("Toegevoegd!")
 
 # --- FORMULIER ---
-st.divider()
-st.subheader("📝 Klacht indienen")
-st.info("Vul onderstaand formulier in om uw klacht kenbaar te maken.")
-
-with st.form("klacht_form_totaal", clear_on_submit=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        naam = st.text_input("👤 Volledige naam")
-        id_nr = st.text_input("🆔 ID Nummer")
-        telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
-        woonadres = st.text_input("🏠 Woonadres")
-    with col2:
-        email = st.text_input("📧 E-mailadres")
-        soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
-        
-    omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht")
-
-    # --- GESCHEIDEN AFSPRAAK SECTIE ---
     st.divider()
-    wil_afspraak = st.checkbox("📅 Ik wil indien nodig een afspraak maken voor deze klacht")
+    st.subheader("📝 Klacht indienen")
     
-    afspraak_datum = None
-    afspraak_tijd = None
-    
-    if wil_afspraak:
-        col_cal1, col_cal2 = st.columns(2)
-        with col_cal1:
-            afspraak_datum = st.date_input("Kies datum")
-        with col_cal2:
-            tijden = [f"{h:02d}:{m:02d}" for h in range(8, 14) for m in [0, 15, 30, 45]] + ["14:00"]
-            afspraak_tijd = st.selectbox("Kies tijdstip", tijden)
-    
-    submit = st.form_submit_button("Verstuur klacht")
+    with st.form("klacht_form_totaal", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            naam = st.text_input("👤 Volledige naam")
+            id_nr = st.text_input("🆔 ID Nummer")
+            telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
+            woonadres = st.text_input("🏠 Woonadres")
+        with col2:
+            email = st.text_input("📧 E-mailadres")
+            soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+            uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
+            
+        omschrijving = st.text_area("📝 Omschrijving klacht/Eventueel Oplossing")
 
-if submit:
-    # Bereid data voor (met None als er geen afspraak is gemaakt)
-    insert_data = {
-        "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
-        "email": email, "klachtensoort": soort, "omschrijving": omschrijving, 
-        "status": "Nieuw", "bijlage_url": uploaded_file.name if uploaded_file else None,
-        "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
-        "afspraak_tijd": afspraak_tijd if wil_afspraak else None
-    }
-    
-    supabase.table("klachten").insert(insert_data).execute()
-    
-    bericht = "✅ Uw klacht is succesvol verzonden!"
-    if wil_afspraak:
-        bericht += f" Afspraak gepland op {afspraak_datum} om {afspraak_tijd}."
-    st.success(bericht)
+        # Optionele Afspraak
+        st.divider()
+        wil_afspraak = st.checkbox("📅 Ik wil indien nodig een afspraak maken")
+        
+        afspraak_datum = None
+        afspraak_tijd = None
+        
+        if wil_afspraak:
+            col_cal1, col_cal2 = st.columns(2)
+            with col_cal1:
+                afspraak_datum = st.date_input("Kies datum")
+            with col_cal2:
+                tijden = [f"{h:02d}:{m:02d}" for h in range(8, 14) for m in [0, 15, 30, 45]] + ["14:00"]
+                afspraak_tijd = st.selectbox("Kies tijdstip", tijden)
+        
+        submit = st.form_submit_button("Verstuur klacht")
+
+    if submit:
+        # We dwingen alle data naar string formaat om API fouten te voorkomen
+        insert_data = {
+            "volledige_naam": str(naam),
+            "id_nummer": str(id_nr),
+            "telefoon": str(telefoon),
+            "adres": str(woonadres),
+            "email": str(email),
+            "klachtensoort": str(soort),
+            "omschrijving": str(omschrijving),
+            "status": "Nieuw",
+            "bijlage_url": str(uploaded_file.name) if uploaded_file else None,
+            "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
+            "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None
+        }
+        
+        try:
+            supabase.table("klachten").insert(insert_data).execute()
+            st.success("✅ Uw klacht is succesvol verzonden!")
+        except Exception as e:
+            st.error(f"Fout bij opslaan: {e}")
