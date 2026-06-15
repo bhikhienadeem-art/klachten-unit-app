@@ -58,15 +58,20 @@ if st.session_state.logged_in:
         klachten = supabase.table("klachten").select("*").execute().data
         for k in klachten:
             with st.expander(f"👤 Klacht: {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
-                st.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                st.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
-                if k.get('bijlage_url'): st.write(f"📎 [Bekijk bijlage]({k['bijlage_url']})")
+                col_a, col_b = st.columns(2)
+                col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
+                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
+                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                col_b.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
+                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
                 
                 status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
                 huidige_status = k.get('status', 'Nieuw')
                 nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=status_opties.index(huidige_status) if huidige_status in status_opties else 0, key=f"status_{k['id']}")
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
                 if st.button("💾 Opslaan", key=f"save_{k['id']}"):
-                    supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                    supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", k['id']).execute()
                     st.rerun()
 
     elif st.session_state.menu == "Rapporten":
@@ -74,12 +79,21 @@ if st.session_state.logged_in:
         data = supabase.table("klachten").select("*").execute().data
         if data:
             df = pd.DataFrame(data)
-            st.plotly_chart(px.pie(df, names='klachtensoort', title="Verdeling klachtensoort"))
+            fig = px.pie(df, names='klachtensoort', title="Verdeling klachtensoort")
+            st.plotly_chart(fig)
             st.dataframe(df)
 
     elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen")
-        # Hier kun je jouw bestaande instellingen-code laten staan
+        st.title("⚙️ Instellingen - Gebruikersbeheer")
+        with st.expander("➕ Nieuwe medewerker toevoegen"):
+            with st.form("add_user_form"):
+                u = st.text_input("Gebruikersnaam")
+                p = st.text_input("Wachtwoord", type="password")
+                r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
+                if st.form_submit_button("Opslaan"):
+                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
+                    st.success(f"Medewerker {u} toegevoegd!")
+                    st.rerun()
 
 else:
     # --- FORMULIER (GECORRIGEERD) ---
