@@ -90,13 +90,49 @@ if st.session_state.logged_in:
         st.write("Gebruikersbeheer functionaliteit...")
 
 else:
-    # --- PUBLIEK FORMULIER ---
+   # --- FORMULIER ---
     st.subheader("📝 Klacht indienen")
-    with st.form("klacht_form"):
+    with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        naam = col1.text_input("Volledige naam")
-        soort = col2.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        omschrijving = st.text_area("Omschrijving")
+        naam = col1.text_input("👤 Volledige naam")
+        id_nr = col1.text_input("🆔 ID Nummer")
+        telefoon = col1.text_input("📞 Telefoon/WhatsApp nummer")
+        woonadres = col1.text_input("🏠 Woonadres")
+        email = col2.text_input("📧 E-mailadres")
+        soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        omschrijving = st.text_area("📝 Omschrijving")
+        
+        # NIEUW: File uploader toevoegen
+        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
+        
         if st.form_submit_button("Verstuur"):
-            supabase.table("klachten").insert({"volledige_naam": naam, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
-            st.success("Verzonden!")
+            file_url = None
+            
+            # Bestand uploaden naar Storage als er een bestand is gekozen
+            if uploaded_file is not None:
+                file_path = f"bijlagen/{uploaded_file.name}"
+                try:
+                    # Upload naar Supabase Storage
+                    supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
+                    # Haal de publieke URL op
+                    file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
+                except Exception as e:
+                    st.error(f"Fout bij uploaden bestand: {e}")
+
+            try:
+                # Opslaan in de 'klachten' tabel
+                data = {
+                    "volledige_naam": naam,
+                    "id_nummer": id_nr,
+                    "telefoon_whatsapp": telefoon,
+                    "adres": woonadres,
+                    "email": email,
+                    "klachtensoort": soort,
+                    "omschrijving": omschrijving,
+                    "status": "Nieuw",
+                    "bijlage_url": file_url # Sla de link op in je database
+                }
+                supabase.table("klachten").insert(data).execute()
+                st.success("✅ Klacht inclusief bijlage verzonden!")
+            except Exception as e:
+                st.error(f"Fout bij verzenden naar database: {e}")
