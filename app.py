@@ -38,15 +38,26 @@ if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
+    
     if not st.session_state.logged_in:
-        gebruiker = st.text_input("Gebruikersnaam", key="user_in")
-        wachtwoord = st.text_input("Wachtwoord", type="password", key="pass_in")
-        if st.button("Inloggen"):
-            if gebruiker == "admin" and wachtwoord == "admin123":
-                st.session_state.logged_in = True
-                st.rerun()
+        # We gebruiken een formulier om 'Enter' ondersteuning te krijgen
+        with st.form("login_form", clear_on_submit=False):
+            gebruiker = st.text_input("Gebruikersnaam")
+            wachtwoord = st.text_input("Wachtwoord", type="password")
+            submit = st.form_submit_button("Inloggen")
+            
+            if submit:
+                # Controleer inloggegevens
+                if gebruiker == "admin" and wachtwoord == "admin123":
+                    st.session_state.logged_in = True
+                    st.rerun()
+                else:
+                    st.error("Onjuiste gebruikersnaam of wachtwoord")
     else:
+        st.success("Ingelogd als beheerder")
+        st.write("---")
         st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
+        
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
