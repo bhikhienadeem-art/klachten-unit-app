@@ -106,8 +106,8 @@ if st.session_state.logged_in:
                 st.rerun()
 
 else:
-   # --- FORMULIER (Vervang je huidige else-blok met dit) ---
-else:
+  else:
+    # --- FORMULIER ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -119,31 +119,16 @@ else:
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("📝 Omschrijving")
         
-        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
-        
+        # Optionele afspraak velden
         st.write("---")
-        st.subheader("🤝 Afspraak maken (Optioneel)")
+        st.subheader("🗓️ Afspraak maken (Optioneel)")
         wil_afspraak = st.checkbox("Ik wil een afspraak maken")
-        
-        afspraak_datum = None
-        afspraak_tijd = None
-        if wil_afspraak:
-            afspraak_datum = st.date_input("Kies datum")
-            afspraak_tijd = st.time_input("Kies tijd (08:00 - 14:00)")
+        datum = st.date_input("Kies datum", value=None)
+        tijd = st.time_input("Kies tijd", value=None)
 
-        submit = st.form_submit_button("Verstuur")
-        
-        if submit:
-            file_url = None
-            if uploaded_file is not None:
-                try:
-                    file_path = f"bijlagen/{uploaded_file.name}"
-                    supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
-                    file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
-                except Exception as e:
-                    st.error(f"Fout bij uploaden bestand: {e}")
-
+        if st.form_submit_button("Verstuur"):
             try:
+                # Alleen data toevoegen als de kolom bestaat in je tabel 'klachten'
                 data = {
                     "volledige_naam": naam,
                     "id_nummer": id_nr,
@@ -153,11 +138,10 @@ else:
                     "klachtensoort": soort,
                     "omschrijving": omschrijving,
                     "status": "Nieuw",
-                    "bijlage_url": file_url,
-                    "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
-                    "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None
+                    "afspraak_datum": str(datum) if wil_afspraak else None,
+                    "afspraak_tijd": str(tijd) if wil_afspraak else None
                 }
                 supabase.table("klachten").insert(data).execute()
                 st.success("✅ Klacht succesvol verzonden!")
             except Exception as e:
-                st.error(f"Database fout: {e}")
+                st.error(f"Fout: {e}")
