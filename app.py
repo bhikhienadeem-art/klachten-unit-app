@@ -141,10 +141,31 @@ else:
         omschrijving = st.text_area("📝 Omschrijving")
         uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
         
-        if st.form_submit_button("Verstuur Klacht"):
-            # Database logica (jouw bestaande)
-            stuur_mail(email, "Bevestiging Klacht", f"Beste {naam}, uw klacht is ontvangen.")
-            stuur_mail("klachtenunitwanicacentrum@gmail.com", "Nieuwe Klacht", f"Naam: {naam}, Soort: {soort}")
+       if st.form_submit_button("Verstuur Klacht"):
+            # 1. Ticketnummer en database opslag (zoals je al hebt)
+            ticket_nr = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+            
+            # 2. De inhoud voor de medewerker (inclusief alle data)
+            mail_medewerker = f"""
+            <h2>Nieuwe klacht binnengekomen: {ticket_nr}</h2>
+            <table border="1" cellpadding="5" style="border-collapse: collapse;">
+                <tr><td><b>Naam:</b></td><td>{naam}</td></tr>
+                <tr><td><b>ID Nummer:</b></td><td>{id_nr}</td></tr>
+                <tr><td><b>Telefoon:</b></td><td>{telefoon}</td></tr>
+                <tr><td><b>Adres:</b></td><td>{woonadres}</td></tr>
+                <tr><td><b>Soort:</b></td><td>{soort}</td></tr>
+                <tr><td><b>Omschrijving:</b></td><td>{omschrijving}</td></tr>
+                <tr><td><b>Bijlage Link:</b></td><td>{uploaded_file.name if uploaded_file else 'Geen bijlage'}</td></tr>
+            </table>
+            <p>Log in op het dashboard om de klacht te beheren.</p>
+            """
+            
+            # 3. Verstuur de mail
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {ticket_nr}", mail_medewerker)
+            
+            # 4. Bevestiging aan burger
+            stuur_mail(email, "Bevestiging Klacht", f"Beste {naam}, uw klacht {ticket_nr} is ontvangen.")
+            
             st.success("✅ Klacht verzonden!")
 
     st.markdown("---")
