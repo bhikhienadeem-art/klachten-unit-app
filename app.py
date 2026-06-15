@@ -105,7 +105,7 @@ if st.session_state.logged_in:
                 st.rerun()
 
 else:
-    # --- FORMULIER (Zichtbaar als niet ingelogd) ---
+    # --- FORMULIER ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -117,8 +117,25 @@ else:
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("📝 Omschrijving")
         
+        # NIEUW: File uploader toevoegen
+        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
+        
         if st.form_submit_button("Verstuur"):
+            file_url = None
+            
+            # Bestand uploaden naar Storage als er een bestand is gekozen
+            if uploaded_file is not None:
+                file_path = f"bijlagen/{uploaded_file.name}"
+                try:
+                    # Upload naar Supabase Storage
+                    supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
+                    # Haal de publieke URL op
+                    file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
+                except Exception as e:
+                    st.error(f"Fout bij uploaden bestand: {e}")
+
             try:
+                # Opslaan in de 'klachten' tabel
                 data = {
                     "volledige_naam": naam,
                     "id_nummer": id_nr,
@@ -127,9 +144,10 @@ else:
                     "email": email,
                     "klachtensoort": soort,
                     "omschrijving": omschrijving,
-                    "status": "Nieuw"
+                    "status": "Nieuw",
+                    "bijlage_url": file_url # Sla de link op in je database
                 }
                 supabase.table("klachten").insert(data).execute()
-                st.success("✅ Verzonden!")
+                st.success("✅ Klacht inclusief bijlage verzonden!")
             except Exception as e:
-                st.error(f"Fout bij verzenden: {e}")
+                st.error(f"Fout bij verzenden naar database: {e}")
