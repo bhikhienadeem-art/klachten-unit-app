@@ -20,6 +20,9 @@ st.markdown("""
     [data-testid="stForm"] { background-color: #e3f2fd; border: 2px solid #004a99; padding: 25px; border-radius: 10px; }
     .stTextInput input, .stTextArea textarea { color: black !important; }
     div.stButton > button { background-color: #004a99; color: white !important; border-radius: 5px; }
+    /* Kalender styling */
+    [data-testid="stDateInput"] input { background-color: white !important; }
+    [data-testid="stSelectbox"] div[data-baseweb="select"] { background-color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -66,6 +69,8 @@ if st.session_state.logged_in:
                 col_a.write(f"**📞 Tel/WA:** {k.get('telefoon', '-')}")
                 col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
                 col_b.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
+                # Weergave afspraak
+                col_b.write(f"**📅 Afspraak:** {k.get('afspraak_datum', '-')} om {k.get('afspraak_tijd', '-')}")
                 st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
                 if k.get('bijlage_url'): st.info(f"📎 Bijlage: {k['bijlage_url']}")
                 
@@ -79,8 +84,6 @@ if st.session_state.logged_in:
                     supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", k['id']).execute()
                     st.rerun()
 
-
-    # 2. RAPPORTEN
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         data = supabase.table("klachten").select("*").execute().data
@@ -90,7 +93,6 @@ if st.session_state.logged_in:
             st.plotly_chart(fig)
             st.dataframe(df)
 
-    # 3. INSTELLINGEN
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Beheer")
         with st.expander("➕ Medewerker toevoegen"):
@@ -103,8 +105,9 @@ if st.session_state.logged_in:
 
 # --- FORMULIER ---
 st.divider()
-st.subheader("📝 Klacht indienen")
-st.info("Vul onderstaand formulier in om uw klacht kenbaar te maken.")
+st.subheader("📝 Klacht indienen & Afspraak maken")
+st.info("Vul onderstaand formulier in om uw klacht kenbaar te maken en een afspraak te plannen.")
+
 with st.form("klacht_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -115,13 +118,26 @@ with st.form("klacht_form", clear_on_submit=True):
     with col2:
         email = st.text_input("📧 E-mailadres")
         soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        
+        # Nieuwe velden voor afspraak
+        afspraak_datum = st.date_input("📅 Kies een datum")
+        tijden = []
+        for uur in range(8, 14):
+            for minuut in [0, 15, 30, 45]:
+                tijden.append(f"{uur:02d}:{minuut:02d}")
+        tijden.append("14:00")
+        afspraak_tijd = st.selectbox("🕒 Kies een tijdstip (15 min)", tijden)
+        
         uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
         
     omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht en indien mogelijk een voorstel voor een oplossing.")
+    
     if st.form_submit_button("Verstuur klacht"):
         supabase.table("klachten").insert({
             "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
             "email": email, "klachtensoort": soort, "omschrijving": omschrijving, 
-            "status": "Nieuw", "bijlage_url": uploaded_file.name if uploaded_file else None
+            "status": "Nieuw", "bijlage_url": uploaded_file.name if uploaded_file else None,
+            "afspraak_datum": str(afspraak_datum),
+            "afspraak_tijd": afspraak_tijd
         }).execute()
-        st.success("✅ Uw klacht is succesvol verzonden!")
+        st.success(f"✅ Uw klacht is verzonden! Afspraak gepland op {afspraak_datum} om {afspraak_tijd}.")
