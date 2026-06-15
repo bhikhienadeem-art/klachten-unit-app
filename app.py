@@ -8,27 +8,36 @@ SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTE2MjgwOCwiZXhwIjoyMDk2NzM4ODA4fQ.crzk5TxZ5F27Ic_34kI7HSikAsvBgO9KfnXxGxVhFk8" 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# --- INITIALISATIE (Moet bovenaan staan om errors te voorkomen) ---
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
+
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
 # --- CSS STYLING ---
 st.markdown("""
     <style>
     .stApp { background-color: #e3f2fd; }
-    .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
+    .header-bar { background-color: #004a99; color: white; padding: 20px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; }
     [data-testid="stSidebar"] { background-color: #004a99; color: white; }
     .stTextInput input { color: black !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER ---
-st.markdown("""
-    <div class="header-bar">
-        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div style="font-size: 0.9em; margin-top: 15px;">
-            📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
+# --- HEADER MET LOGO ---
+col_l, col_r = st.columns([1, 4])
+with col_l:
+    # Zorg dat "orgineel logo Centrum.png" in je map staat
+    st.image("orgineel logo Centrum.png", width=180)
+with col_r:
+    st.markdown("""
+        <div class="header-bar">
+            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+            <div style="font-size: 0.9em; margin-top: 10px;">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
+            </div>
         </div>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # --- INITIALISATIE ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
