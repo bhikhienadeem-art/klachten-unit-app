@@ -37,24 +37,19 @@ if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("### 🔑 Medewerkers Inlog")
-    
-    # Gebruik een duidelijke scheiding
-    st.markdown("---")
-    
-    # Navigatie met radio buttons
-    st.session_state.menu = st.radio(
-        "Navigatie", 
-        ["Dashboard", "Rapporten", "Instellingen"],
-        label_visibility="visible"
-    )
-    
-    st.markdown("---")
-    
-    # Knop voor uitloggen met een specifieke layout of kleur
-    if st.button("Uitloggen", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
+    st.header("🔑 Medewerkers Inlog")
+    if not st.session_state.logged_in:
+        gebruiker = st.text_input("Gebruikersnaam", key="user_in")
+        wachtwoord = st.text_input("Wachtwoord", type="password", key="pass_in")
+        if st.button("Inloggen"):
+            if gebruiker == "admin" and wachtwoord == "admin123":
+                st.session_state.logged_in = True
+                st.rerun()
+    else:
+        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
+        if st.button("Uitloggen"):
+            st.session_state.logged_in = False
+            st.rerun()
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
