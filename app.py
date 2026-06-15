@@ -119,7 +119,7 @@ if st.session_state.logged_in:
             soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
             uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
             
-        omschrijving = st.text_area("📝 Omschrijving klacht/Eventueel Oplossing")
+        omschrijving = st.text_area("📝 Omschrijving klacht")
 
         # Optionele Afspraak
         st.divider()
@@ -157,5 +157,7 @@ if st.session_state.logged_in:
         try:
             supabase.table("klachten").insert(insert_data).execute()
             st.success("✅ Uw klacht is succesvol verzonden!")
+        except Exception as e:
+            st.error(f"Fout bij opslaan: {e}")
         except Exception as e:
             st.error(f"Fout bij opslaan: {e}")
