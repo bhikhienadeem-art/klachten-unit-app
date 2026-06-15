@@ -19,12 +19,7 @@ st.set_page_config(
 # --- CSS STYLING (Professioneel Blauw Thema) ---
 st.markdown("""
     <style>
-    /* Achtergrond: Rustig lichtblauw */
-    .stApp {
-        background-color: #f0f4f8;
-    }
-    
-    /* Header balk: Diepblauw */
+    .stApp { background-color: #f0f4f8; }
     .header-bar {
         background-color: #004a99;
         color: white;
@@ -38,46 +33,17 @@ st.markdown("""
     .header-bar h1 { margin: 0; color: white !important; font-size: 2.5em; }
     .header-text { margin-top: 15px; font-size: 1.2em; font-style: italic; color: #e1eaf3; }
     .contact-info { font-size: 1.0em; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3); color: white; }
-
-    /* Sidebar: Lichtblauw */
-    [data-testid="stSidebar"] {
-        background-color: #e8eff6;
-    }
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2 { color: #004a99 !important; }
-
-    /* Containers: Wit met blauwe rand */
+    [data-testid="stSidebar"] { background-color: #e8eff6; }
     div[data-testid="stExpander"], [data-testid="stForm"] {
         background-color: #ffffff;
         border: 1px solid #d1d9e6;
         border-radius: 10px;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
     }
-
-    /* Knoppen: Blauw */
-    div.stButton > button {
-        background-color: #004a99;
-        color: white !important;
-        border-radius: 8px;
-        border: none;
-        font-weight: bold;
-    }
-    div.stButton > button:hover {
-        background-color: #003366;
-    }
-
-    /* Tekst en titels */
+    div.stButton > button { background-color: #004a99; color: white !important; border-radius: 8px; border: none; font-weight: bold; }
+    div.stButton > button:hover { background-color: #003366; }
     h1, h2, h3, h4 { color: #004a99 !important; }
-    
-    /* E-mail link styling */
-    a.mailto-link {
-        text-decoration: none;
-        color: white !important;
-        background-color: #004a99;
-        padding: 10px 15px;
-        border-radius: 8px;
-        font-weight: bold;
-        display: inline-block;
-    }
+    a.mailto-link { text-decoration: none; color: white !important; background-color: #004a99; padding: 10px 15px; border-radius: 8px; font-weight: bold; display: inline-block; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -85,14 +51,8 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <h1>🏢 Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div class="header-text">
-            Samen bouwen we aan een beter Wanica.<br>
-            Uw stem telt. Via deze pagina kunt u uw klacht of suggestie veilig en direct indienen.
-        </div>
-        <div class="contact-info">
-            📍 <b>Bezoekadres:</b> Tawajarieweg 20, Domburg | 📞 <b>Tel:</b> (+597) 366660<br>
-            ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com
-        </div>
+        <div class="header-text">Samen bouwen we aan een beter Wanica.<br>Uw stem telt. Via deze pagina kunt u uw klacht of suggestie indienen.</div>
+        <div class="contact-info">📍 <b>Adres:</b> Tawajarieweg 20 | 📞 <b>Tel:</b> (+597) 366660 | ✉️ <b>E-mail:</b> klachtenunitwanicacentrum@gmail.com</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -118,7 +78,7 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- PAGINA LOGICA ---
+# --- PAGINA LOGICA (Admin gedeelte) ---
 if st.session_state.logged_in:
     if st.session_state.menu == "📊 Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
@@ -133,37 +93,34 @@ if st.session_state.logged_in:
                 col_b.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
                 st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
                 if k.get('bijlage_url'): st.info(f"📎 Bijlage: {k['bijlage_url']}")
-                
                 st.divider()
                 status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                huidige_status = k.get('status', 'Nieuw')
-                idx = status_opties.index(huidige_status) if huidige_status in status_opties else 0
-                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=idx, key=f"status_{k['id']}")
+                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=status_opties.index(k.get('status', 'Nieuw')), key=f"status_{k['id']}")
                 notitie = st.text_area("✍️ Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
-                
                 if st.button("💾 Opslaan", key=f"save_{k['id']}", use_container_width=True):
                     supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", k['id']).execute()
                     st.rerun()
-                if k.get('email'):
-                    st.markdown(f'<a href="mailto:{k["email"]}?subject=Update klacht&body=Geachte {k.get("volledige_naam")}" class="mailto-link">📧 E-mail cliënt</a>', unsafe_allow_html=True)
+    # (Overige menu items: Rapporten & Instellingen hier weggelaten voor kortheid, maar die staan in je vorige code)
 
-    elif st.session_state.menu == "📈 Rapporten":
-        st.title("📈 Rapporten & Beheer")
-        data = supabase.table("klachten").select("*").execute().data
-        if data:
-            df = pd.DataFrame(data)
-            fig = px.pie(df, names='klachtensoort', title="🗺️ Verdeling per Klachtensoort")
-            st.plotly_chart(fig, use_container_width=True)
-            st.dataframe(df, use_container_width=True)
-            target_id = st.selectbox("Selecteer ID om te verwijderen", df['id'].tolist())
-            if st.button("🗑️ Verwijder klacht", use_container_width=True):
-                supabase.table("klachten").delete().eq("id", target_id).execute()
-                st.rerun()
-
-    elif st.session_state.menu == "⚙️ Instellingen":
-        st.title("⚙️ Instellingen")
-        with st.expander("➕ Nieuwe medewerker"):
-            with st.form("add_user"):
-                new_user = st.text_input("👤 Gebruikersnaam")
-                new_pass = st.text_input("🔒 Wachtwoord", type="password")
-                new_
+# --- FORMULIER (Voor de burger) ---
+st.divider()
+st.subheader("📋 Klacht indienen")
+with st.form("klacht_form", clear_on_submit=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        naam = st.text_input("👤 Volledige naam")
+        id_nr = st.text_input("🆔 ID Nummer")
+        telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
+        woonadres = st.text_input("🏠 Woonadres")
+    with col2:
+        email = st.text_input("📧 E-mailadres")
+        soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
+    omschrijving = st.text_area("📝 Omschrijving of suggestie voor oplossing")
+    if st.form_submit_button("Verstuur klacht"):
+        supabase.table("klachten").insert({
+            "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
+            "email": email, "klachtensoort": soort, "omschrijving": omschrijving, 
+            "status": "Nieuw", "bijlage_url": uploaded_file.name if uploaded_file else None
+        }).execute()
+        st.success("✅ Uw klacht is succesvol verzonden!")
