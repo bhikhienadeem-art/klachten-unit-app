@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from supabase import create_client
-from datetime import datetime, time
 
 # --- CONFIGURATIE ---
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
@@ -21,30 +20,20 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-import streamlit as st
-
-# --- HEADER MET LOGO LINKS, TITEL MIDDEN, WAPEN RECHTS ---
-# We maken 3 kolommen aan met verhoudingen [1, 3, 1]
-col_left, col_mid, col_right = st.columns([1, 3, 1]) 
-
-with col_left:
-    # Je logo aan de linkerkant
-    st.image("orgineel logo Centrum.png", width=120) 
-
-with col_mid:
-    # De tekst in het midden
-    st.markdown("""
-        <div style="text-align: center; background-color: #004a99; color: white; padding: 15px; border-radius: 10px;">
-            <h2 style="margin-bottom: 0;">Klachtenunit Commissariaat Wanica Centrum</h2>
-            <p style="font-size: 0.9em; margin-top: 5px;">
-                📍 Tawajarieweg 20 | 📞 (+597) 366660 | 💬 WhatsApp: (+597) 8921062
-            </p>
+# --- HEADER ---
+st.markdown("""
+    <div class="header-bar">
+        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+        <div style="font-size: 0.9em; margin-top: 15px;">
+            📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
         </div>
-    """, unsafe_allow_html=True)
+    </div>
+""", unsafe_allow_html=True)
 
-with col_right:
-    # Het wapen van Suriname aan de rechterkant
-    st.image("wapen.png", width=120)
+# --- INITIALISATIE ---
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
+
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
@@ -95,8 +84,6 @@ if st.session_state.logged_in:
 
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
-        
-        # --- Nieuwe medewerker toevoegen ---
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form"):
                 u = st.text_input("Gebruikersnaam")
@@ -107,28 +94,18 @@ if st.session_state.logged_in:
                     st.success(f"Medewerker {u} toegevoegd!")
                     st.rerun()
         
-        # --- Lijst met medewerkers en verwijder functie ---
         st.subheader("👥 Huidige medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
-        
         if medewerkers:
             df_users = pd.DataFrame(medewerkers)
-            # Toon alleen relevante kolommen in de tabel
             st.table(df_users[['gebruikersnaam', 'rol']])
-            
-            # Selectie menu voor verwijderen
-            te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", 
-                                          options=[m['gebruikersnaam'] for m in medewerkers])
-            
+            te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
             if st.button("Verwijder deze medewerker"):
                 supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
-                st.success(f"Medewerker {te_verwijderen} is verwijderd.")
                 st.rerun()
-        else:
-            st.info("Geen medewerkers gevonden.")
 
 else:
-    # --- FORMULIER (GECORRIGEERD) ---
+    # --- FORMULIER ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -140,32 +117,37 @@ else:
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("📝 Omschrijving")
         
-        uploaded_file = st.file_uploader("📎 Foto of document uploaden", type=['png', 'jpg', 'jpeg', 'pdf'])
+        # NIEUW: File uploader toevoegen
+        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
         
-        st.write("---")
-        st.subheader("🗓️ Afspraak maken (Optioneel)")
-        wil_afspraak = st.checkbox("Ik wil een afspraak maken")
-        datum = st.date_input("Kies datum", value=None)
-        tijd = st.time_input("Kies tijd", value=None)
-
         if st.form_submit_button("Verstuur"):
             file_url = None
+            
+            # Bestand uploaden naar Storage als er een bestand is gekozen
             if uploaded_file is not None:
+                file_path = f"bijlagen/{uploaded_file.name}"
                 try:
-                    # Let op: de bucketnaam is nu aangepast naar 'klachten-bijlagen'
-                    file_path = f"{datetime.now().timestamp()}_{uploaded_file.name}"
-                    supabase.storage.from_("klachten-bijlagen").upload(file_path, uploaded_file.getvalue())
-                    file_url = supabase.storage.from_("klachten-bijlagen").get_public_url(file_path)
+                    # Upload naar Supabase Storage
+                    supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
+                    # Haal de publieke URL op
+                    file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
                 except Exception as e:
-                    st.error(f"Fout bij uploaden: {e}")
-                    st.stop()
+                    st.error(f"Fout bij uploaden bestand: {e}")
 
-            data = {
-                "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
-                "adres": woonadres, "email": email, "klachtensoort": soort,
-                "omschrijving": omschrijving, "status": "Nieuw", "bijlage_url": file_url,
-                "afspraak_datum": str(datum) if wil_afspraak else None,
-                "afspraak_tijd": str(tijd) if wil_afspraak else None
-            }
-            supabase.table("klachten").insert(data).execute()
-            st.success("✅ Klacht succesvol verzonden!")
+            try:
+                # Opslaan in de 'klachten' tabel
+                data = {
+                    "volledige_naam": naam,
+                    "id_nummer": id_nr,
+                    "telefoon_whatsapp": telefoon,
+                    "adres": woonadres,
+                    "email": email,
+                    "klachtensoort": soort,
+                    "omschrijving": omschrijving,
+                    "status": "Nieuw",
+                    "bijlage_url": file_url # Sla de link op in je database
+                }
+                supabase.table("klachten").insert(data).execute()
+                st.success("✅ Klacht inclusief bijlage verzonden!")
+            except Exception as e:
+                st.error(f"Fout bij verzenden naar database: {e}")
