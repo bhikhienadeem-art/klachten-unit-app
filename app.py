@@ -101,18 +101,27 @@ if st.session_state.logged_in:
                     supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
                     st.success("Toegevoegd!")
 
-# --- FORMULIER (Burger) ---
+# --- FORMULIER ---
 st.divider()
 st.subheader("📝 Klacht indienen")
+st.info("Vul onderstaand formulier in om uw klacht kenbaar te maken.")
 with st.form("klacht_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
-        naam = st.text_input("Volledige naam")
-        id_nr = st.text_input("ID Nummer")
+        naam = st.text_input("👤 Volledige naam")
+        id_nr = st.text_input("🆔 ID Nummer")
+        telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
+        woonadres = st.text_input("🏠 Woonadres")
     with col2:
-        email = st.text_input("E-mailadres")
-        soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-    omschrijving = st.text_area("Omschrijving")
+        email = st.text_input("📧 E-mailadres")
+        soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
+        
+    omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht en indien mogelijk een voorstel voor een oplossing.")
     if st.form_submit_button("Verstuur klacht"):
-        supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
-        st.success("✅ Verzonden!")
+        supabase.table("klachten").insert({
+            "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
+            "email": email, "klachtensoort": soort, "omschrijving": omschrijving, 
+            "status": "Nieuw", "bijlage_url": uploaded_file.name if uploaded_file else None
+        }).execute()
+        st.success("✅ Uw klacht is succesvol verzonden!")
