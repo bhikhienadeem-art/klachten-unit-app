@@ -85,6 +85,8 @@ if st.session_state.logged_in:
 
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
+        
+        # --- Nieuwe medewerker toevoegen ---
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form"):
                 u = st.text_input("Gebruikersnaam")
@@ -94,6 +96,26 @@ if st.session_state.logged_in:
                     supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
                     st.success(f"Medewerker {u} toegevoegd!")
                     st.rerun()
+        
+        # --- Lijst met medewerkers en verwijder functie ---
+        st.subheader("👥 Huidige medewerkers")
+        medewerkers = supabase.table("medewerkers").select("*").execute().data
+        
+        if medewerkers:
+            df_users = pd.DataFrame(medewerkers)
+            # Toon alleen relevante kolommen in de tabel
+            st.table(df_users[['gebruikersnaam', 'rol']])
+            
+            # Selectie menu voor verwijderen
+            te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", 
+                                          options=[m['gebruikersnaam'] for m in medewerkers])
+            
+            if st.button("Verwijder deze medewerker"):
+                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
+                st.success(f"Medewerker {te_verwijderen} is verwijderd.")
+                st.rerun()
+        else:
+            st.info("Geen medewerkers gevonden.")
 
 else:
     # --- FORMULIER (GECORRIGEERD) ---
