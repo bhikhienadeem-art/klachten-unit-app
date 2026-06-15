@@ -122,24 +122,36 @@ with st.form("klacht_form_totaal", clear_on_submit=True):
         
     omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht")
 
-    # --- AFSPRAAK SECTIE ---
+    # --- GESCHEIDEN AFSPRAAK SECTIE ---
     st.divider()
-    st.subheader("📅 Afspraak maken")
-    col_cal1, col_cal2 = st.columns(2)
-    with col_cal1:
-        afspraak_datum = st.date_input("Kies datum")
-    with col_cal2:
-        tijden = [f"{h:02d}:{m:02d}" for h in range(8, 14) for m in [0, 15, 30, 45]] + ["14:00"]
-        afspraak_tijd = st.selectbox("Kies tijdstip", tijden)
+    wil_afspraak = st.checkbox("📅 Ik wil indien nodig een afspraak maken voor deze klacht")
     
-    submit = st.form_submit_button("Verstuur klacht & Afspraak")
+    afspraak_datum = None
+    afspraak_tijd = None
+    
+    if wil_afspraak:
+        col_cal1, col_cal2 = st.columns(2)
+        with col_cal1:
+            afspraak_datum = st.date_input("Kies datum")
+        with col_cal2:
+            tijden = [f"{h:02d}:{m:02d}" for h in range(8, 14) for m in [0, 15, 30, 45]] + ["14:00"]
+            afspraak_tijd = st.selectbox("Kies tijdstip", tijden)
+    
+    submit = st.form_submit_button("Verstuur klacht")
 
 if submit:
-    supabase.table("klachten").insert({
+    # Bereid data voor (met None als er geen afspraak is gemaakt)
+    insert_data = {
         "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
         "email": email, "klachtensoort": soort, "omschrijving": omschrijving, 
         "status": "Nieuw", "bijlage_url": uploaded_file.name if uploaded_file else None,
-        "afspraak_datum": str(afspraak_datum),
-        "afspraak_tijd": afspraak_tijd
-    }).execute()
-    st.success(f"✅ Uw klacht is verzonden! Afspraak gepland op {afspraak_datum} om {afspraak_tijd}.")
+        "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
+        "afspraak_tijd": afspraak_tijd if wil_afspraak else None
+    }
+    
+    supabase.table("klachten").insert(insert_data).execute()
+    
+    bericht = "✅ Uw klacht is succesvol verzonden!"
+    if wil_afspraak:
+        bericht += f" Afspraak gepland op {afspraak_datum} om {afspraak_tijd}."
+    st.success(bericht)
