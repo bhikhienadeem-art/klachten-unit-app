@@ -31,46 +31,59 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud):
             smtp.send_message(msg)
         return True
     except Exception as e:
-        st.error(f"Fout bij mail: {e}")
         return False
 
-# --- LOGICA ---
-if st.session_state.logged_in:
-    # Sidebar voor medewerkers
-    with st.sidebar:
-        st.title("Menu")
-        st.session_state.menu = st.radio("Ga naar:", ["Dashboard", "Rapporten", "Instellingen"])
+# --- CSS & HEADER ---
+st.markdown("<style>.stApp { background-color: #e3f2fd; } .header-bar { background-color: #004a99; color: white; padding: 20px; border-radius: 10px; text-align: center; }</style>", unsafe_allow_html=True)
+col_logo, col_text = st.columns([1, 4])
+with col_logo: st.image("orgineel logo Centrum.png", width=150)
+with col_text: st.markdown("<div class='header-bar'><h1>Klachtenunit Commissariaat Wanica Centrum</h1></div>", unsafe_allow_html=True)
+
+# --- SIDEBAR & AUTH ---
+with st.sidebar:
+    st.header("🔑 Medewerkers")
+    if not st.session_state.logged_in:
+        u = st.text_input("Gebruiker")
+        p = st.text_input("Wachtwoord", type="password")
+        if st.button("Inloggen"):
+            if u == "admin" and p == "admin123":
+                st.session_state.logged_in = True
+                st.rerun()
+    else:
+        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
 
+# --- PAGINA LOGICA ---
+if st.session_state.logged_in:
     klachten = supabase.table("klachten").select("*").execute().data
-
+    
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
         for k in klachten:
-            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Ticket: {k.get('ticket_id')}"):
-                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
-                                           index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
-                                           key=f"s_{k['id']}")
+            with st.expander(f"👤 {k.get('volledige_naam')} | Status: {k.get('status')}"):
+                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), key=f"s_{k['id']}")
                 if st.button("Opslaan", key=f"b_{k['id']}"):
                     supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
                     st.rerun()
-
+    
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten")
         if klachten: st.dataframe(pd.DataFrame(klachten))
-
+            
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen")
+        st.info("Beheer hier medewerkers en systeeminstellingen.")
 
 else:
     # --- BURGERS PAGINA ---
-    st.title("Klachtenunit Wanica")
     with st.form("klacht_form", clear_on_submit=True):
-        naam = st.text_input("Volledige naam")
-        email = st.text_input("E-mailadres")
+        st.subheader("📝 Klacht indienen")
+        col1, col2 = st.columns(2)
+        naam = col1.text_input("Volledige naam")
+        email = col2.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("Omschrijving")
         
@@ -79,20 +92,9 @@ else:
             data = {"volledige_naam": naam, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw", "ticket_id": ticket_nr}
             supabase.table("klachten").insert(data).execute()
             
-            # Professionele e-mails
-            mail_burger = f"<h2>Bevestiging van uw klacht</h2><p>Beste {naam}, uw klacht {ticket_nr} is ontvangen.</p>"
+            # Mails versturen
+            mail_burger = f"<h2>Bevestiging {ticket_nr}</h2><p>Beste {naam}, uw klacht is ontvangen.</p>"
             mail_medewerker = f"<h2>Nieuwe klacht</h2><p>Ticket: {ticket_nr}<br>Naam: {naam}<br>Omschrijving: {omschrijving}</p>"
-            
-            stuur_mail(email, "Bevestiging Klacht", mail_burger)
+            stuur_mail(email, "Klacht Ontvangen", mail_burger)
             stuur_mail("klachtenunitwanicacentrum@gmail.com", "Nieuwe Klacht", mail_medewerker)
-            
-            st.success("✅ Klacht verzonden! Controleer eventueel uw spamfolder.")
-
-    # Inlog knop voor medewerkers onderaan
-    with st.expander("🔑 Medewerkers inlog"):
-        u = st.text_input("Gebruikersnaam")
-        p = st.text_input("Wachtwoord", type="password")
-        if st.button("Inloggen"):
-            if u == "admin" and p == "admin123":
-                st.session_state.logged_in = True
-                st.rerun()
+            st.success("✅ Klacht verzonden!")
