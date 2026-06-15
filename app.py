@@ -131,7 +131,7 @@ with st.form("klacht_form", clear_on_submit=True):
         # NIEUWE CODE: File uploader toegevoegd
         uploaded_file = st.file_uploader("Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
         
-    omschrijving = st.text_area("Omschrijving of oplossing")
+    omschrijving = st.text_area("Geef hier een korte omschrijving van uw klacht en indien nodig een voorstel voor een oplossing.")
     
     if st.form_submit_button("Verstuur klacht"):
         file_url = None
