@@ -26,7 +26,7 @@ st.markdown("""
         margin-bottom: 30px; 
     }
     
-    /* Sidebar blauw */
+    /* Sidebar blauw en tekst wit */
     [data-testid="stSidebar"] { background-color: #004a99; color: white; }
     [data-testid="stSidebar"] * { color: white !important; }
     
@@ -38,11 +38,17 @@ st.markdown("""
         border-radius: 10px;
     }
     
+    /* Zorg dat tekst IN invoervelden leesbaar is */
+    .stTextInput input, .stTextArea textarea, .stSelectbox select {
+        color: black !important; /* Tekstkleur in velden zwart maken voor contrast */
+        background-color: white !important;
+    }
+    
     div.stButton > button { background-color: #004a99; color: white !important; border-radius: 5px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER MET GOUDEN RAND ---
+# --- HEADER ---
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
@@ -60,15 +66,15 @@ if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
     if not st.session_state.logged_in:
-        gebruiker = st.text_input("👤 Gebruikersnaam")
-        wachtwoord = st.text_input("🔒 Wachtwoord", type="password")
-        if st.button("Inloggen"):
+        gebruiker = st.text_input("👤 Gebruikersnaam", key="user_in")
+        wachtwoord = st.text_input("🔒 Wachtwoord", type="password", key="pass_in")
+        if st.button("Inloggen", key="login_btn"):
             if gebruiker == "admin" and wachtwoord == "admin123":
                 st.session_state.logged_in = True
                 st.rerun()
     else:
         st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
-        if st.button("Uitloggen"):
+        if st.button("Uitloggen", key="logout_btn"):
             st.session_state.logged_in = False
             st.rerun()
 
@@ -76,13 +82,17 @@ with st.sidebar:
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
-        klachten = supabase.table("klachten").select("*").execute().data
-        for k in klachten:
-            with st.expander(f"Klacht ID: {k.get('id', 'N/A')}"):
-                st.write(f"**Naam:** {k.get('volledige_naam')}")
-                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
-                if st.button("Opslaan", key=f"save_{k['id']}"):
-                    st.success("Opgeslagen!")
+        # Let op: Zorg dat je Supabase tabel 'klachten' bestaat
+        try:
+            klachten = supabase.table("klachten").select("*").execute().data
+            for k in klachten:
+                with st.expander(f"Klacht ID: {k.get('id', 'N/A')}"):
+                    st.write(f"**Naam:** {k.get('volledige_naam')}")
+                    st.write(f"**Omschrijving:** {k.get('omschrijving')}")
+                    if st.button("Opslaan", key=f"save_{k['id']}"):
+                        st.success("Opgeslagen!")
+        except Exception as e:
+            st.error("Kon klachten niet ophalen.")
 
 # --- FORMULIER ---
 st.divider()
