@@ -13,12 +13,15 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 # --- CSS STYLING ---
 st.markdown("""
     <style>
-    .stApp { background-color: #f0f4f8; }
+    /* Blauwe achtergrond voor de hele app */
+    .stApp { background-color: #e3f2fd; }
     .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
+    [data-testid="stSidebar"] { background-color: #004a99; color: white; }
+    [data-testid="stSidebar"] * { color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER MET WHATSAPP ---
+# --- HEADER ---
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
@@ -48,53 +51,65 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- FORMULIER & AFSPRAAK ---
-st.subheader("📝 Klacht indienen")
-with st.form("klacht_form", clear_on_submit=True):
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        naam = st.text_input("👤 Volledige naam")
-        id_nr = st.text_input("🆔 ID Nummer")
-        telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
-        woonadres = st.text_input("🏠 Woonadres")
-        
-    with col2:
-        email = st.text_input("📧 E-mailadres")
-        soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
-        
-    omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht.")
-    
-    # Afspraak gedeelte
-    st.divider()
-    st.subheader("📅 Afspraak maken (optioneel)")
-    wil_afspraak = st.checkbox("Ik wil een afspraak maken voor deze klacht")
-    
-    afspraak_datum = None
-    afspraak_tijd = None
-    
-    if wil_afspraak:
-        col_c1, col_c2 = st.columns(2)
-        afspraak_datum = col_c1.date_input("Kies datum")
-        afspraak_tijd = col_c2.time_input("Kies tijdstip")
-        
-    submit = st.form_submit_button("Verstuur klacht & Afspraak")
+# --- PAGINA LOGICA ---
+if st.session_state.logged_in:
+    if st.session_state.menu == "Dashboard":
+        st.title("📊 Dashboard - Klachtenbeheer")
+        klachten = supabase.table("klachten").select("*").execute().data
+        for k in klachten:
+            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                if st.button("🗑️ Klacht verwijderen", key=f"del_{k['id']}"):
+                    supabase.table("klachten").delete().eq("id", k['id']).execute()
+                    st.rerun()
 
-    if submit:
-        # Opslaan naar database
-        data = {
-            "volledige_naam": naam,
-            "id_nummer": id_nr,
-            "telefoon": telefoon,
-            "adres": woonadres,
-            "email": email,
-            "klachtensoort": soort,
-            "omschrijving": omschrijving,
-            "status": "Nieuw",
-            "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
-            "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None,
-            "bijlage_url": uploaded_file.name if uploaded_file else None
-        }
-        supabase.table("klachten").insert(data).execute()
-        st.success("✅ Uw klacht is succesvol verzonden!" + (" Afspraak is genoteerd." if wil_afspraak else ""))
+    elif st.session_state.menu == "Rapporten":
+        st.title("📈 Rapporten & Analyse")
+        data = supabase.table("klachten").select("*").execute().data
+        if data:
+            df = pd.DataFrame(data)
+            fig = px.pie(df, names='klachtensoort', title="Verdeling klachtensoort")
+            st.plotly_chart(fig)
+
+    elif st.session_state.menu == "Instellingen":
+        st.title("⚙️ Instellingen - Beheer")
+        st.write("Beheer hier medewerkers en systeeminstellingen.")
+
+else:
+    # --- FORMULIER & AFSPRAAK (Alleen zichtbaar als NIET ingelogd) ---
+    st.subheader("📝 Klacht indienen")
+    with st.form("klacht_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            naam = st.text_input("👤 Volledige naam")
+            id_nr = st.text_input("🆔 ID Nummer")
+            telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
+            woonadres = st.text_input("🏠 Woonadres")
+        with col2:
+            email = st.text_input("📧 E-mailadres")
+            soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+            uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
+        
+        omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht.")
+        
+        st.divider()
+        st.subheader("📅 Afspraak maken (optioneel)")
+        wil_afspraak = st.checkbox("Ik wil een afspraak maken voor deze klacht")
+        
+        afspraak_datum, afspraak_tijd = None, None
+        if wil_afspraak:
+            c1, c2 = st.columns(2)
+            afspraak_datum = c1.date_input("Kies datum")
+            afspraak_tijd = c2.time_input("Kies tijdstip")
+            
+        if st.form_submit_button("Verstuur klacht & Afspraak"):
+            data = {
+                "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon,
+                "adres": woonadres, "email": email, "klachtensoort": soort,
+                "omschrijving": omschrijving, "status": "Nieuw",
+                "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
+                "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None,
+                "bijlage_url": uploaded_file.name if uploaded_file else None
+            }
+            supabase.table("klachten").insert(data).execute()
+            st.success("✅ Uw klacht is verzonden!")
