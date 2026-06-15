@@ -141,24 +141,44 @@ else:
         omschrijving = st.text_area("📝 Omschrijving")
         uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
         
-       if st.form_submit_button("Verstuur Klacht"):
-            # 1. Ticketnummer en database opslag (zoals je al hebt)
+     if st.form_submit_button("Verstuur Klacht"):
+            # 1. Ticketnummer en database opslag
             ticket_nr = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
             
-            # 2. De inhoud voor de medewerker (inclusief alle data)
+            # 2. De uitgebreide inhoud voor de medewerker
             mail_medewerker = f"""
             <h2>Nieuwe klacht binnengekomen: {ticket_nr}</h2>
-            <table border="1" cellpadding="5" style="border-collapse: collapse;">
+            <p>Er is een nieuwe klacht ingediend met de volgende details:</p>
+            <table border="1" cellpadding="5" style="border-collapse: collapse; width: 100%;">
                 <tr><td><b>Naam:</b></td><td>{naam}</td></tr>
                 <tr><td><b>ID Nummer:</b></td><td>{id_nr}</td></tr>
-                <tr><td><b>Telefoon:</b></td><td>{telefoon}</td></tr>
+                <tr><td><b>Telefoon/WhatsApp:</b></td><td>{telefoon}</td></tr>
                 <tr><td><b>Adres:</b></td><td>{woonadres}</td></tr>
-                <tr><td><b>Soort:</b></td><td>{soort}</td></tr>
+                <tr><td><b>Soort klacht:</b></td><td>{soort}</td></tr>
                 <tr><td><b>Omschrijving:</b></td><td>{omschrijving}</td></tr>
-                <tr><td><b>Bijlage Link:</b></td><td>{uploaded_file.name if uploaded_file else 'Geen bijlage'}</td></tr>
+                <tr><td><b>Bestand:</b></td><td>{uploaded_file.name if uploaded_file else 'Geen bestand geüpload'}</td></tr>
             </table>
-            <p>Log in op het dashboard om de klacht te beheren.</p>
+            <p>Log in op het dashboard om de status te wijzigen of notities toe te voegen.</p>
             """
+            
+            # 3. Verstuur de mails
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {ticket_nr}", mail_medewerker)
+            stuur_mail(email, "Bevestiging Klacht", f"Beste {naam}, uw klacht {ticket_nr} is in goede orde ontvangen.")
+            
+            # 4. Database insert (zorg dat je hier alle velden toevoegt)
+            supabase.table("klachten").insert({
+                "volledige_naam": naam,
+                "id_nummer": id_nr,
+                "telefoon_whatsapp": telefoon,
+                "adres": woonadres,
+                "email": email,
+                "klachtensoort": soort,
+                "omschrijving": omschrijving,
+                "status": "Nieuw",
+                "ticket_id": ticket_nr
+            }).execute()
+            
+            st.success("✅ Klacht verzonden!")
             
             # 3. Verstuur de mail
             stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {ticket_nr}", mail_medewerker)
