@@ -106,7 +106,6 @@ if st.session_state.logged_in:
                 st.rerun()
 
 else:
-    else:
     # --- FORMULIER ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
