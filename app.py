@@ -138,17 +138,21 @@ else:
             elif afspraak_tijd.hour < 8 or afspraak_tijd.hour >= 14:
                 st.error("Afspraken zijn alleen mogelijk tussen 08:00 en 14:00 uur.")
         
-        if st.form_submit_button("Verstuur"):
+       if st.form_submit_button("Verstuur"):
             file_url = None
+            
+            # 1. Bestand uploaden (zorg dat bucket 'bijlagen' bestaat in Supabase Storage)
             if uploaded_file is not None:
-                file_path = f"bijlagen/{uploaded_file.name}"
                 try:
+                    file_path = f"bijlagen/{uploaded_file.name}"
                     supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
                     file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
                 except Exception as e:
-                    st.error(f"Fout bij uploaden bestand: {e}")
+                    st.error(f"Upload fout: {e}")
 
+            # 2. Database insert
             try:
+                # Let op: de keys hieronder MOETEN exact overeenkomen met je tabel-headers
                 data = {
                     "volledige_naam": naam,
                     "id_nummer": id_nr,
@@ -162,7 +166,10 @@ else:
                     "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
                     "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None
                 }
-                supabase.table("klachten").insert(data).execute()
-                st.success("✅ Klacht en eventuele afspraak verzonden!")
+                
+                # Verwijder keys uit 'data' als de kolom niet bestaat in je tabel
+                response = supabase.table("klachten").insert(data).execute()
+                st.success("✅ Klacht succesvol verstuurd!")
+                
             except Exception as e:
-                st.error(f"Fout bij verzenden: {e}")
+                st.error(f"Database fout: {e}")
