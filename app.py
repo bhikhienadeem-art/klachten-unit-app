@@ -50,43 +50,67 @@ with st.sidebar:
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
+    klachten = supabase.table("klachten").select("*").execute().data
+    df_dash = pd.DataFrame(klachten)
+
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
+        if not df_dash.empty:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Totaal", len(df_dash))
+            c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
+            c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
+            st.markdown("---")
         
-        # Data ophalen
-        klachten = supabase.table("klachten").select("*").execute().data
-        
-        if klachten:
-            # --- KLACHTEN LIJST MET PRIORITEIT ---
-            for k in klachten:
-                status = k.get('status', 'Nieuw')
-                soort = k.get('klachtensoort', 'Anders')
+        for k in klachten:
+            status = k.get('status', 'Nieuw')
+            soort = k.get('klachtensoort', 'Anders')
+            if soort == "Wateroverlast": prio = "🔴 HOOG"
+            elif soort == "Wegen": prio = "🟠 MEDIUM"
+            else: prio = "🟢 LAAG"
                 
-                # Prioriteit bepalen
-                if soort == "Wateroverlast": prio_label = "🔴 HOOG"
-                elif soort == "Wegen": prio_label = "🟠 MEDIUM"
-                else: prio_label = "🟢 LAAG"
-                    
-                with st.expander(f"{prio_label} | 👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {soort} | Status: {status}"):
-                    col_a, col_b = st.columns(2)
-                    col_a.write(f"**🆔 Ticket:** {k.get('ticket_id', '-')}")
-                    col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                    col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
-                    col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
-                    
-                    st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                    
-                    st.markdown("---")
-                    status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                    huidige_idx = status_opties.index(status) if status in status_opties else 0
-                    nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{k['id']}")
-                    
-                    if st.button("💾 Opslaan", key=f"save_{k['id']}"):
-                        supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
-                        st.rerun()
-        else:
-            st.info("Geen klachten gevonden.")
+            with st.expander(f"{prio} | 👤 {k.get('volledige_naam', 'Anoniem')} | {soort} | Status: {status}"):
+                col_a, col_b = st.columns(2)
+                col_a.write(f"**🆔 Ticket:** {k.get('ticket_id', '-')}")
+                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
+                                           index=["Nieuw", "In behandeling", "Afgehandeld"].index(status), 
+                                           key=f"st_{k['id']}")
+                if st.button("💾 Opslaan", key=f"btn_{k['id']}"):
+                    supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                    st.rerun()
 
+    elif st.session_state.menu == "Rapporten":
+        st.title("📈 Rapporten & Analyse")
+        if not df_dash.empty:
+            st.download_button("📥 Download CSV", data=df_dash.to_csv(index=False), file_name='klachten.csv')
+            st.plotly_chart(px.pie(df_dash, names='klachtensoort'))
+            st.dataframe(df_dash)
+        else:
+            st.info("Geen data om weer te geven.")
+
+    elif st.session_state.menu == "Instellingen":
+        st.title("⚙️ Instellingen - Gebruikersbeheer")
+        with st.expander("➕ Nieuwe medewerker toevoegen"):
+            with st.form("add_user_form", clear_on_submit=True):
+                u = st.text_input("Gebruikersnaam")
+                p = st.text_input("Wachtwoord", type="password")
+                r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
+                if st.form_submit_button("Opslaan"):
+                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
+                    st.success("✅ Toegevoegd!")
+                    st.rerun()
+        
+        st.subheader("👥 Huidige medewerkers")
+        medewerkers = supabase.table("medewerkers").select("*").execute().data
+        if medewerkers:
+            st.table(pd.DataFrame(medewerkers)[['gebruikersnaam', 'rol']])
+            te_verwijderen = st.selectbox("Selecteer om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
+            if st.button("🗑️ Verwijder medewerker"):
+                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
+                st.rerun()
 else:
     # --- BURGERS PAGINA ---
     st.subheader("📝 Klacht indienen")
