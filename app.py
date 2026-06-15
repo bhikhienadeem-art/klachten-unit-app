@@ -15,8 +15,6 @@ st.markdown("""
     <style>
     .stApp { background-color: #e3f2fd; }
     .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
-    
-    /* Zorg dat tekst in inputvelden zichtbaar blijft in de sidebar */
     [data-testid="stSidebar"] { background-color: #004a99; color: white; }
     .stTextInput input { color: black !important; }
     </style>
@@ -52,7 +50,7 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
- # --- PAGINA LOGICA ---
+# --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
@@ -62,24 +60,19 @@ if st.session_state.logged_in:
                 col_a, col_b = st.columns(2)
                 col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
                 col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon', '-')}")
+                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
                 col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
                 col_b.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
                 st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                if k.get('bijlage_url'): st.info(f"📎 Bijlage: {k['bijlage_url']}")
                 
-                st.divider()
                 status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
                 huidige_status = k.get('status', 'Nieuw')
-                idx = status_opties.index(huidige_status) if huidige_status in status_opties else 0
-                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=idx, key=f"status_{k['id']}")
+                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=status_opties.index(huidige_status) if huidige_status in status_opties else 0, key=f"status_{k['id']}")
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
                 if st.button("💾 Opslaan", key=f"save_{k['id']}"):
                     supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", k['id']).execute()
                     st.rerun()
 
-
-    # 2. RAPPORTEN
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         data = supabase.table("klachten").select("*").execute().data
@@ -89,44 +82,30 @@ if st.session_state.logged_in:
             st.plotly_chart(fig)
             st.dataframe(df)
 
-    # 3. INSTELLINGEN
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
-        
-        # 1. Medewerker toevoegen
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form"):
                 u = st.text_input("Gebruikersnaam")
                 p = st.text_input("Wachtwoord", type="password")
                 r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
                 if st.form_submit_button("Opslaan"):
-                    # Wachtwoord zou je hier idealiter moeten hashen!
                     supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
                     st.success(f"Medewerker {u} toegevoegd!")
                     st.rerun()
-
-        # 2. Lijst met medewerkers tonen & verwijderen
+        
         st.subheader("👥 Huidige medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
-        
-        # Maak een DataFrame voor een mooi overzicht
         if medewerkers:
             df_users = pd.DataFrame(medewerkers)
-            
-            # Toon tabel
             st.table(df_users[['gebruikersnaam', 'rol']])
-            
-            # Verwijder optie
-            st.write("---")
             te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
             if st.button("Verwijder deze medewerker"):
                 supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
-                st.warning(f"Gebruiker {te_verwijderen} verwijderd.")
                 st.rerun()
-        else:
-            st.info("Geen medewerkers gevonden.")
 
-# --- FORMULIER ---
+else:
+    # --- FORMULIER (Zichtbaar als niet ingelogd) ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -140,11 +119,10 @@ if st.session_state.logged_in:
         
         if st.form_submit_button("Verstuur"):
             try:
-                # Kolomnamen in de 'data' dictionary moeten exact matchen met de database
                 data = {
                     "volledige_naam": naam,
                     "id_nummer": id_nr,
-                    "telefoon_whatsapp": telefoon,  # Aangepast op basis van database screenshot
+                    "telefoon_whatsapp": telefoon,
                     "adres": woonadres,
                     "email": email,
                     "klachtensoort": soort,
@@ -153,7 +131,5 @@ if st.session_state.logged_in:
                 }
                 supabase.table("klachten").insert(data).execute()
                 st.success("✅ Verzonden!")
-            except Exception as e:
-                st.error(f"Fout bij verzenden: {e}")
             except Exception as e:
                 st.error(f"Fout bij verzenden: {e}")
