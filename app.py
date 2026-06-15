@@ -52,34 +52,54 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- PAGINA LOGICA ---
+ # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard")
+        st.title("📊 Dashboard - Klachtenbeheer")
         klachten = supabase.table("klachten").select("*").execute().data
         for k in klachten:
-            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
-                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                if st.button("🗑️ Verwijderen", key=f"del_{k['id']}"):
-                    supabase.table("klachten").delete().eq("id", k['id']).execute()
+            with st.expander(f"👤 Klacht: {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
+                col_a, col_b = st.columns(2)
+                col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
+                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon', '-')}")
+                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                col_b.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
+                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                if k.get('bijlage_url'): st.info(f"📎 Bijlage: {k['bijlage_url']}")
+                
+                st.divider()
+                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                huidige_status = k.get('status', 'Nieuw')
+                idx = status_opties.index(huidige_status) if huidige_status in status_opties else 0
+                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=idx, key=f"status_{k['id']}")
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+                if st.button("💾 Opslaan", key=f"save_{k['id']}"):
+                    supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", k['id']).execute()
                     st.rerun()
 
+
+    # 2. RAPPORTEN
     elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten")
+        st.title("📈 Rapporten & Analyse")
         data = supabase.table("klachten").select("*").execute().data
         if data:
             df = pd.DataFrame(data)
-            st.plotly_chart(px.pie(df, names='klachtensoort'))
+            fig = px.pie(df, names='klachtensoort', title="Verdeling klachtensoort")
+            st.plotly_chart(fig)
+            st.dataframe(df)
 
+    # 3. INSTELLINGEN
     elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen")
-        medewerkers = supabase.table("medewerkers").select("*").execute().data
-        for m in medewerkers:
-            col1, col2 = st.columns([3, 1])
-            col1.write(f"Gebruiker: {m['gebruikersnaam']}")
-            if col2.button("❌", key=f"del_user_{m['id']}"):
-                supabase.table("medewerkers").delete().eq("id", m['id']).execute()
-                st.rerun()
+        st.title("⚙️ Instellingen - Beheer")
+        with st.expander("➕ Medewerker toevoegen"):
+            with st.form("add_user"):
+                u = st.text_input("Gebruikersnaam")
+                p = st.text_input("Wachtwoord", type="password")
+                if st.form_submit_button("Toevoegen"):
+                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
+                    st.success("Toegevoegd!")
+
 
 # --- FORMULIER (Alleen als niet ingelogd) ---
 else:
