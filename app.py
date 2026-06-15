@@ -21,27 +21,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER MET LOGO ---
-col_logo, col_text = st.columns([1, 4]) 
+import streamlit as st
 
-with col_logo:
-    # We gebruiken de exacte bestandsnaam met spaties
-    st.image("orgineel logo Centrum.png", width=150) 
+# --- HEADER MET LOGO LINKS, TITEL MIDDEN, WAPEN RECHTS ---
+# We maken 3 kolommen aan met verhoudingen [1, 3, 1]
+col_left, col_mid, col_right = st.columns([1, 3, 1]) 
 
-with col_text:
+with col_left:
+    # Je logo aan de linkerkant
+    st.image("orgineel logo Centrum.png", width=120) 
+
+with col_mid:
+    # De tekst in het midden
     st.markdown("""
-        <div class="header-bar">
-            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-            <div style="font-size: 0.9em; margin-top: 15px;">
-                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062
-            </div>
+        <div style="text-align: center; background-color: #004a99; color: white; padding: 15px; border-radius: 10px;">
+            <h2 style="margin-bottom: 0;">Klachtenunit Commissariaat Wanica Centrum</h2>
+            <p style="font-size: 0.9em; margin-top: 5px;">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660 | 💬 WhatsApp: (+597) 8921062
+            </p>
         </div>
     """, unsafe_allow_html=True)
 
-# --- INITIALISATIE ---
-if "logged_in" not in st.session_state: st.session_state.logged_in = False
-if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
-
+with col_right:
+    # Het wapen van Suriname aan de rechterkant
+    st.image("wapen.png", width=120)
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
