@@ -117,7 +117,7 @@ with st.form("klacht_form", clear_on_submit=True):
         soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
         
-    omschrijving = st.text_area("📝 Omschrijving of voorstel voor oplossing")
+    omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht en indien mogelijk een voorstel voor een oplossing.")
     if st.form_submit_button("Verstuur klacht"):
         supabase.table("klachten").insert({
             "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
