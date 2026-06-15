@@ -106,7 +106,6 @@ if st.session_state.logged_in:
                 st.rerun()
 
 else:
-  else:
     # --- FORMULIER ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
@@ -119,7 +118,6 @@ else:
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("📝 Omschrijving")
         
-        # Optionele afspraak velden
         st.write("---")
         st.subheader("🗓️ Afspraak maken (Optioneel)")
         wil_afspraak = st.checkbox("Ik wil een afspraak maken")
@@ -128,7 +126,6 @@ else:
 
         if st.form_submit_button("Verstuur"):
             try:
-                # Alleen data toevoegen als de kolom bestaat in je tabel 'klachten'
                 data = {
                     "volledige_naam": naam,
                     "id_nummer": id_nr,
@@ -144,4 +141,4 @@ else:
                 supabase.table("klachten").insert(data).execute()
                 st.success("✅ Klacht succesvol verzonden!")
             except Exception as e:
-                st.error(f"Fout: {e}")
+                st.error(f"Database fout: {e}")
