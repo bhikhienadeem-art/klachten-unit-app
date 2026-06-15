@@ -126,8 +126,7 @@ if st.session_state.logged_in:
         else:
             st.info("Geen medewerkers gevonden.")
 
-# --- FORMULIER (Alleen als niet ingelogd) ---
-else:
+# --- FORMULIER ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -137,17 +136,22 @@ else:
         woonadres = col1.text_input("🏠 Woonadres")
         email = col2.text_input("📧 E-mailadres")
         soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        uploaded_file = col2.file_uploader("📎 Foto/Document", type=['png', 'jpg', 'pdf'])
         omschrijving = st.text_area("📝 Omschrijving")
         
-        wil_afspraak = st.checkbox("Ik wil een afspraak maken")
-        afspraak_datum = st.date_input("Kies datum") if wil_afspraak else None
-        
         if st.form_submit_button("Verstuur"):
-            supabase.table("klachten").insert({
-                "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon,
-                "adres": woonadres, "email": email, "klachtensoort": soort,
-                "omschrijving": omschrijving, "status": "Nieuw",
-                "afspraak_datum": str(afspraak_datum) if wil_afspraak else None
-            }).execute()
-            st.success("✅ Verzonden!")
+            try:
+                # Kolomnamen in de 'data' dictionary moeten exact matchen met de database
+                data = {
+                    "volledige_naam": naam,
+                    "id_nummer": id_nr,
+                    "telefoon_whatsapp": telefoon,  # Aangepast op basis van database screenshot
+                    "adres": woonadres,
+                    "email": email,
+                    "klachtensoort": soort,
+                    "omschrijving": omschrijving,
+                    "status": "Nieuw"
+                }
+                supabase.table("klachten").insert(data).execute()
+                st.success("✅ Verzonden!")
+            except Exception as e:
+                st.error(f"Fout bij verzenden: {e}")
