@@ -70,7 +70,7 @@ if st.session_state.logged_in:
         st.title("📈 Rapporten")
         st.write("Hier komt je data-analyse.")
         
-   else:
+  else:
     # --- BURGERS PAGINA ---
     st.subheader("Welkom - Wat wilt u doen?")
     tab1, tab2 = st.tabs(["📝 Klacht indienen", "🗓️ Afspraak maken"])
