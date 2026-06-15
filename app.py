@@ -13,11 +13,12 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 # --- CSS STYLING ---
 st.markdown("""
     <style>
-    /* Blauwe achtergrond voor de hele app */
     .stApp { background-color: #e3f2fd; }
     .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
+    
+    /* Zorg dat tekst in inputvelden zichtbaar blijft in de sidebar */
     [data-testid="stSidebar"] { background-color: #004a99; color: white; }
-    [data-testid="stSidebar"] * { color: white !important; }
+    .stTextInput input { color: black !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -25,8 +26,7 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div style="font-style: italic;">Welkom op de officiële klachtenpagina.</div>
-        <div style="font-size: 0.9em; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+        <div style="font-size: 0.9em; margin-top: 15px;">
             📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
         </div>
     </div>
@@ -36,80 +36,73 @@ st.markdown("""
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
+# --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
     if not st.session_state.logged_in:
         gebruiker = st.text_input("Gebruikersnaam", key="user_in")
         wachtwoord = st.text_input("Wachtwoord", type="password", key="pass_in")
-        if st.button("Inloggen", key="login_btn"):
+        if st.button("Inloggen"):
             if gebruiker == "admin" and wachtwoord == "admin123":
                 st.session_state.logged_in = True
                 st.rerun()
     else:
         st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
-        if st.button("Uitloggen", key="logout_btn"):
+        if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard - Klachtenbeheer")
+        st.title("📊 Dashboard")
         klachten = supabase.table("klachten").select("*").execute().data
         for k in klachten:
             with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
                 st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                if st.button("🗑️ Klacht verwijderen", key=f"del_{k['id']}"):
+                if st.button("🗑️ Verwijderen", key=f"del_{k['id']}"):
                     supabase.table("klachten").delete().eq("id", k['id']).execute()
                     st.rerun()
 
     elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten & Analyse")
+        st.title("📈 Rapporten")
         data = supabase.table("klachten").select("*").execute().data
         if data:
             df = pd.DataFrame(data)
-            fig = px.pie(df, names='klachtensoort', title="Verdeling klachtensoort")
-            st.plotly_chart(fig)
+            st.plotly_chart(px.pie(df, names='klachtensoort'))
 
     elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen - Beheer")
-        st.write("Beheer hier medewerkers en systeeminstellingen.")
+        st.title("⚙️ Instellingen")
+        medewerkers = supabase.table("medewerkers").select("*").execute().data
+        for m in medewerkers:
+            col1, col2 = st.columns([3, 1])
+            col1.write(f"Gebruiker: {m['gebruikersnaam']}")
+            if col2.button("❌", key=f"del_user_{m['id']}"):
+                supabase.table("medewerkers").delete().eq("id", m['id']).execute()
+                st.rerun()
 
+# --- FORMULIER (Alleen als niet ingelogd) ---
 else:
-    # --- FORMULIER & AFSPRAAK (Alleen zichtbaar als NIET ingelogd) ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        with col1:
-            naam = st.text_input("👤 Volledige naam")
-            id_nr = st.text_input("🆔 ID Nummer")
-            telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
-            woonadres = st.text_input("🏠 Woonadres")
-        with col2:
-            email = st.text_input("📧 E-mailadres")
-            soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-            uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'pdf'])
+        naam = col1.text_input("👤 Volledige naam")
+        id_nr = col1.text_input("🆔 ID Nummer")
+        telefoon = col1.text_input("📞 Telefoon/WhatsApp nummer")
+        woonadres = col1.text_input("🏠 Woonadres")
+        email = col2.text_input("📧 E-mailadres")
+        soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        uploaded_file = col2.file_uploader("📎 Foto/Document", type=['png', 'jpg', 'pdf'])
+        omschrijving = st.text_area("📝 Omschrijving")
         
-        omschrijving = st.text_area("📝 Geef hier een korte omschrijving van uw klacht.")
+        wil_afspraak = st.checkbox("Ik wil een afspraak maken")
+        afspraak_datum = st.date_input("Kies datum") if wil_afspraak else None
         
-        st.divider()
-        st.subheader("📅 Afspraak maken (optioneel)")
-        wil_afspraak = st.checkbox("Ik wil een afspraak maken voor deze klacht")
-        
-        afspraak_datum, afspraak_tijd = None, None
-        if wil_afspraak:
-            c1, c2 = st.columns(2)
-            afspraak_datum = c1.date_input("Kies datum")
-            afspraak_tijd = c2.time_input("Kies tijdstip")
-            
-        if st.form_submit_button("Verstuur klacht & Afspraak"):
-            data = {
+        if st.form_submit_button("Verstuur"):
+            supabase.table("klachten").insert({
                 "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon,
                 "adres": woonadres, "email": email, "klachtensoort": soort,
                 "omschrijving": omschrijving, "status": "Nieuw",
-                "afspraak_datum": str(afspraak_datum) if wil_afspraak else None,
-                "afspraak_tijd": str(afspraak_tijd) if wil_afspraak else None,
-                "bijlage_url": uploaded_file.name if uploaded_file else None
-            }
-            supabase.table("klachten").insert(data).execute()
-            st.success("✅ Uw klacht is verzonden!")
+                "afspraak_datum": str(afspraak_datum) if wil_afspraak else None
+            }).execute()
+            st.success("✅ Verzonden!")
