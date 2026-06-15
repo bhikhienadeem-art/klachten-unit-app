@@ -78,22 +78,57 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- PAGINA LOGICA ---
+# --- PAGINA LOGICA: DASHBOARD ---
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
-        # Let op: Zorg dat je Supabase tabel 'klachten' bestaat
-        try:
-            klachten = supabase.table("klachten").select("*").execute().data
-            for k in klachten:
-                with st.expander(f"Klacht ID: {k.get('id', 'N/A')}"):
-                    st.write(f"**Naam:** {k.get('volledige_naam')}")
-                    st.write(f"**Omschrijving:** {k.get('omschrijving')}")
-                    if st.button("Opslaan", key=f"save_{k['id']}"):
+        
+        # Ophalen van alle klachten uit Supabase
+        klachten = supabase.table("klachten").select("*").execute().data
+        
+        for k in klachten:
+            # Gebruik een unieke key voor elke expander om conflicten te voorkomen
+            with st.expander(f"👤 Klacht van: {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
+                col1, col2 = st.columns(2)
+                
+                # Gegevens tonen
+                col1.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
+                col1.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                col1.write(f"**📞 Tel:** {k.get('telefoon', '-')}")
+                col2.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                col2.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
+                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                
+                st.divider()
+                
+                # Status bijwerken
+                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                huidige_status = k.get('status', 'Nieuw')
+                idx = status_opties.index(huidige_status) if huidige_status in status_opties else 0
+                
+                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=idx, key=f"status_{k['id']}")
+                
+                # Interne notitie
+                notitie = st.text_area("✍️ Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+                
+                # Knoppen acties
+                col_btn1, col_btn2 = st.columns([1, 4])
+                
+                with col_btn1:
+                    if st.button("💾 Opslaan", key=f"save_{k['id']}"):
+                        supabase.table("klachten").update({
+                            "status": nieuwe_status, 
+                            "interne_notitie": notitie
+                        }).eq("id", k['id']).execute()
                         st.success("Opgeslagen!")
-        except Exception as e:
-            st.error("Kon klachten niet ophalen.")
-
+                        st.rerun()
+                
+                with col_btn2:
+                    # E-mail naar client sturen
+                    if k.get('email'):
+                        mail_subject = "Update over uw klacht bij Wanica Centrum"
+                        mail_body = f"Geachte {k.get('volledige_naam')},%0D%0A%0D%0AUw klacht met status '{nieuwe_status}' is bijgewerkt.%0D%0A%0D%0ANotitie: {notitie}"
+                        st.markdown(f'<a href="mailto:{k["email"]}?subject={mail_subject}&body={mail_body}" style="padding: 0.5em 1em; background-color: #004a99; color: white; border-radius: 5px; text-decoration: none;">📧 E-mail naar client</a>', unsafe_allow_html=True)
 # --- FORMULIER ---
 st.divider()
 st.subheader("📝 Klacht indienen")
