@@ -128,7 +128,29 @@ with st.form("klacht_form", clear_on_submit=True):
     with col2:
         email = st.text_input("E-mailadres")
         soort = st.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        # NIEUWE CODE: File uploader toegevoegd
+        uploaded_file = st.file_uploader("Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
+        
     omschrijving = st.text_area("Omschrijving of oplossing")
+    
     if st.form_submit_button("Verstuur klacht"):
-        supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, "email": email, "klachtensoort": soort, "omschrijving": omschrijving, "status": "Nieuw"}).execute()
+        file_url = None
+        
+        # Logica om bestand te uploaden naar Supabase Storage (optioneel)
+        if uploaded_file is not None:
+            # Hier zou je de code toevoegen om het bestand naar een 
+            # 'klachten-bijlagen' bucket in Supabase te sturen.
+            # Voor nu slaan we de bestandsnaam op als placeholder.
+            file_url = uploaded_file.name 
+
+        supabase.table("klachten").insert({
+            "volledige_naam": naam, 
+            "id_nummer": id_nr, 
+            "adres": woonadres, 
+            "email": email, 
+            "klachtensoort": soort, 
+            "omschrijving": omschrijving, 
+            "status": "Nieuw",
+            "bijlage_url": file_url  # Zorg dat deze kolom bestaat in je tabel
+        }).execute()
         st.success("Uw klacht is verzonden!")
