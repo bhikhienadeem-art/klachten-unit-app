@@ -69,8 +69,7 @@ if st.session_state.logged_in:
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten")
         st.write("Hier komt je data-analyse.")
-
-else:
+        
    else:
     # --- BURGERS PAGINA ---
     st.subheader("Welkom - Wat wilt u doen?")
