@@ -29,6 +29,25 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# --- INITIALISATIE ---
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
+
+with st.sidebar:
+    st.header("🔑 Medewerkers Inlog")
+    if not st.session_state.logged_in:
+        gebruiker = st.text_input("Gebruikersnaam", key="user_in")
+        wachtwoord = st.text_input("Wachtwoord", type="password", key="pass_in")
+        if st.button("Inloggen", key="login_btn"):
+            if gebruiker == "admin" and wachtwoord == "admin123":
+                st.session_state.logged_in = True
+                st.rerun()
+    else:
+        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
+        if st.button("Uitloggen", key="logout_btn"):
+            st.session_state.logged_in = False
+            st.rerun()
+
 # --- FORMULIER & AFSPRAAK ---
 st.subheader("📝 Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
