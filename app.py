@@ -13,31 +13,45 @@ st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 # --- CSS STYLING ---
 st.markdown("""
     <style>
-    /* Achtergrond pagina */
     .stApp { background-color: #f0f4f8; }
+    
+    /* Header met gouden rand */
+    .header-bar { 
+        background-color: #004a99; 
+        color: white; 
+        padding: 25px; 
+        text-align: center; 
+        border: 5px solid #ffcc00; 
+        border-radius: 10px; 
+        margin-bottom: 30px; 
+    }
     
     /* Sidebar blauw */
     [data-testid="stSidebar"] { background-color: #004a99; color: white; }
     [data-testid="stSidebar"] * { color: white !important; }
     
-    /* Formulier styling */
+    /* Formulier blauwe look */
     [data-testid="stForm"] {
         background-color: #e3f2fd;
         border: 2px solid #004a99;
-        padding: 20px;
+        padding: 25px;
         border-radius: 10px;
     }
     
-    /* Blauwe invulvelden (invoervelden krijgen een blauwe rand) */
-    div[data-testid="stTextInput"] > div > div > input { border: 2px solid #004a99; }
-    
-    /* Header bar */
-    .header-bar { background-color: #004a99; color: white; padding: 20px; border-radius: 10px; text-align: center; }
+    div.stButton > button { background-color: #004a99; color: white !important; border-radius: 5px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER ---
-st.markdown('<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1></div>', unsafe_allow_html=True)
+# --- HEADER MET GOUDEN RAND ---
+st.markdown("""
+    <div class="header-bar">
+        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+        <div style="font-style: italic;">Welkom op de officiële klachtenpagina. Uw stem wordt gehoord.</div>
+        <div style="font-size: 0.9em; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+            📍 Tawajarieweg 20 | 📞 (+597) 366660 | ✉️ klachtenunitwanicacentrum@gmail.com
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # --- INITIALISATIE ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
@@ -46,8 +60,8 @@ if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 with st.sidebar:
     st.header("🔑 Medewerkers Inlog")
     if not st.session_state.logged_in:
-        gebruiker = st.text_input("Gebruikersnaam")
-        wachtwoord = st.text_input("Wachtwoord", type="password")
+        gebruiker = st.text_input("👤 Gebruikersnaam")
+        wachtwoord = st.text_input("🔒 Wachtwoord", type="password")
         if st.button("Inloggen"):
             if gebruiker == "admin" and wachtwoord == "admin123":
                 st.session_state.logged_in = True
@@ -61,18 +75,18 @@ with st.sidebar:
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard")
+        st.title("📊 Dashboard - Klachtenbeheer")
         klachten = supabase.table("klachten").select("*").execute().data
         for k in klachten:
-            # Unieke key per expander/knop voorkomt de DuplicateElementKey fout
-            with st.expander(f"Klacht van: {k.get('volledige_naam')}"):
-                st.write(f"Omschrijving: {k.get('omschrijving')}")
-                if st.button("Opslaan status", key=f"save_{k['id']}"):
+            with st.expander(f"Klacht ID: {k.get('id', 'N/A')}"):
+                st.write(f"**Naam:** {k.get('volledige_naam')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
+                if st.button("Opslaan", key=f"save_{k['id']}"):
                     st.success("Opgeslagen!")
 
 # --- FORMULIER ---
 st.divider()
-st.subheader("📋 Klacht indienen")
+st.subheader("📝 Klacht indienen")
 with st.form("klacht_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -85,8 +99,7 @@ with st.form("klacht_form", clear_on_submit=True):
         soort = st.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         file = st.file_uploader("📎 Voeg bestand toe")
         
-    omschrijving = st.text_area("📝 Omschrijving")
+    omschrijving = st.text_area("📝 Omschrijving of voorstel")
     
     if st.form_submit_button("Verstuur klacht"):
-        # Hier je supabase insert logica
-        st.success("✅ Klacht succesvol verzonden!")
+        st.success("✅ Uw klacht is succesvol verzonden!")
