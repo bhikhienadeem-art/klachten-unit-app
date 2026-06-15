@@ -21,15 +21,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER ---
-st.markdown("""
-    <div class="header-bar">
-        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div style="font-size: 0.9em; margin-top: 15px;">
-            📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
+# --- HEADER MET LOGO ---
+col_logo, col_text = st.columns([1, 4]) 
+
+with col_logo:
+    # We gebruiken de exacte bestandsnaam met spaties
+    st.image("orgineel logo Centrum.png", width=150) 
+
+with col_text:
+    st.markdown("""
+        <div class="header-bar">
+            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+            <div style="font-size: 0.9em; margin-top: 15px;">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062
+            </div>
         </div>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # --- INITIALISATIE ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
