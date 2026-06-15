@@ -55,28 +55,33 @@ if st.session_state.logged_in:
     # Voeg hier je dashboard code toe...
 else:
     # --- BURGERS PAGINA ---
-    tab1, tab2 = st.tabs(["📝 Klacht indienen", "🗓️ Afspraak maken"])
+    st.subheader("📝 Klacht indienen")
     
-    with tab1:
-        st.subheader("Klacht indienen")
-        with st.form("klacht_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            naam = col1.text_input("Volledige naam")
-            id_nr = col1.text_input("ID Nummer")
-            telefoon = col1.text_input("Telefoon/WhatsApp")
-            woonadres = col1.text_input("Woonadres")
-            email = col2.text_input("E-mailadres")
-            soort = col2.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-            omschrijving = st.text_area("Omschrijving")
-            uploaded_file = st.file_uploader("Upload bestand", type=['png', 'jpg', 'jpeg', 'pdf'])
-            
-            if st.form_submit_button("Verstuur"):
-                st.success("✅ Klacht verzonden!")
+    # 1. Jouw bestaande Klachtenformulier
+    with st.form("klacht_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        naam = col1.text_input("👤 Volledige naam")
+        id_nr = col1.text_input("🆔 ID Nummer")
+        telefoon = col1.text_input("📞 Telefoon/WhatsApp nummer")
+        woonadres = col1.text_input("🏠 Woonadres")
+        email = col2.text_input("📧 E-mailadres")
+        soort = col2.selectbox("📋 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        omschrijving = st.text_area("📝 Omschrijving")
+        uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
+        
+        if st.form_submit_button("Verstuur Klacht"):
+            # ... (jouw bestaande upload/database logica hier)
+            st.success("✅ Klacht verzonden!")
 
-    with tab2:
-        st.subheader("Afspraak maken")
-        with st.form("afspraak_form", clear_on_submit=True):
-            naam_af = st.text_input("Uw Naam")
-            datum = st.date_input("Datum")
-            if st.form_submit_button("Afspraak Bevestigen"):
-                st.success(f"✅ Afspraak bevestigd voor {naam_af}")
+    st.markdown("---") # Visuele scheiding
+
+    # 2. Afsprakenformulier direct eronder
+    st.subheader("🗓️ Afspraak maken")
+    with st.form("afspraak_form", clear_on_submit=True):
+        naam_af = st.text_input("Uw Naam voor afspraak")
+        datum = st.date_input("Datum")
+        tijd = st.selectbox("Tijdstip", ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00"])
+        
+        if st.form_submit_button("Afspraak Bevestigen"):
+            # ... (jouw database logica voor afspraken)
+            st.success(f"✅ Afspraak op {datum} om {tijd} bevestigd!")
