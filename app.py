@@ -7,80 +7,68 @@ import uuid
 import smtplib
 from email.message import EmailMessage
 
-# --- CONFIGURATIE ---
+# 1. Configuratie
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTE2MjgwOCwiZXhwIjoyMDk2NzM4ODA4fQ.crzk5TxZ5F27Ic_34kI7HSikAsvBgO9KfnXxGxVhFk8" 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- INITIALISATIE ---
+# 2. Initialisatie
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
-# --- E-MAIL FUNCTIE ---
-def stuur_mail(ontvanger, onderwerp, html_inhoud):
+# 3. E-mail functie
+def stuur_mail(ontvanger, onderwerp, inhoud):
     try:
         msg = EmailMessage()
         msg['Subject'] = onderwerp
         msg['From'] = "klachtenunitwanicacentrum@gmail.com"
         msg['To'] = ontvanger
-        msg.add_header('Content-Type', 'text/html')
-        msg.set_payload(html_inhoud)
+        msg.set_content(inhoud)
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            # Wachtwoord zonder spaties: nbngichzpmlgzglc
             smtp.login("klachtenunitwanicacentrum@gmail.com", "nbngichzpmlgzglc")
             smtp.send_message(msg)
         return True
     except Exception as e:
         return False
 
-# --- CSS & HEADER ---
-st.markdown("<style>.stApp { background-color: #e3f2fd; } .header-bar { background-color: #004a99; color: white; padding: 20px; border-radius: 10px; text-align: center; }</style>", unsafe_allow_html=True)
-col_logo, col_text = st.columns([1, 4])
-with col_logo: st.image("orgineel logo Centrum.png", width=150)
-with col_text: st.markdown("<div class='header-bar'><h1>Klachtenunit Commissariaat Wanica Centrum</h1></div>", unsafe_allow_html=True)
-
-# --- SIDEBAR & AUTH ---
-with st.sidebar:
-    st.header("🔑 Medewerkers")
-    if not st.session_state.logged_in:
-        u = st.text_input("Gebruiker")
-        p = st.text_input("Wachtwoord", type="password")
-        if st.button("Inloggen"):
-            if u == "admin" and p == "admin123":
-                st.session_state.logged_in = True
-                st.rerun()
-    else:
+# --- LOGICA ---
+if st.session_state.logged_in:
+    # Sidebar voor medewerkers
+    with st.sidebar:
+        st.title("Menu")
         st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
 
-# --- PAGINA LOGICA ---
-if st.session_state.logged_in:
     klachten = supabase.table("klachten").select("*").execute().data
-    
+
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard")
         for k in klachten:
-            with st.expander(f"👤 {k.get('volledige_naam')} | Status: {k.get('status')}"):
-                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
-                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), key=f"s_{k['id']}")
+            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Ticket: {k.get('ticket_id', 'N/A')}"):
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                # Status update
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], 
+                                           index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), 
+                                           key=f"s_{k['id']}")
                 if st.button("Opslaan", key=f"b_{k['id']}"):
                     supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
                     st.rerun()
-    
+
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten")
         if klachten: st.dataframe(pd.DataFrame(klachten))
-            
+
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen")
-        st.info("Beheer hier medewerkers en systeeminstellingen.")
 
 else:
     # --- BURGERS PAGINA ---
+    st.title("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
-        st.subheader("📝 Klacht indienen")
         col1, col2 = st.columns(2)
         naam = col1.text_input("Volledige naam")
         email = col2.text_input("E-mailadres")
@@ -93,8 +81,16 @@ else:
             supabase.table("klachten").insert(data).execute()
             
             # Mails versturen
-            mail_burger = f"<h2>Bevestiging {ticket_nr}</h2><p>Beste {naam}, uw klacht is ontvangen.</p>"
-            mail_medewerker = f"<h2>Nieuwe klacht</h2><p>Ticket: {ticket_nr}<br>Naam: {naam}<br>Omschrijving: {omschrijving}</p>"
-            stuur_mail(email, "Klacht Ontvangen", mail_burger)
-            stuur_mail("klachtenunitwanicacentrum@gmail.com", "Nieuwe Klacht", mail_medewerker)
+            stuur_mail(email, "Bevestiging Klacht", f"Beste {naam}, uw klacht {ticket_nr} is ontvangen.")
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", "Nieuwe Klacht", f"Nieuwe klacht van {naam}: {omschrijving}")
+            
             st.success("✅ Klacht verzonden!")
+
+    # Inlog knop voor medewerkers
+    if st.checkbox("Medewerkers inloggen"):
+        u = st.text_input("Gebruikersnaam")
+        p = st.text_input("Wachtwoord", type="password")
+        if st.button("Inloggen"):
+            if u == "admin" and p == "admin123":
+                st.session_state.logged_in = True
+                st.rerun()
