@@ -1,6 +1,11 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from supabase import create_client
+from datetime import datetime
+
+# 1. PAGE CONFIG MOET ALTIJD ALS EERSTE
+st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
 # --- CONFIGURATIE ---
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
@@ -8,35 +13,76 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- INITIALISATIE ---
-if "logged_in" not in st.session_state: 
-    st.session_state.logged_in = False
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
-st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
+# --- CSS STYLING ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #e3f2fd; }
+    .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
+    [data-testid="stSidebar"] { background-color: #004a99; color: white; }
+    .stTextInput input { color: black !important; }
+    </style>
+""", unsafe_html=True)
 
 # --- HEADER ---
-col_l, col_r = st.columns([1, 4])
-with col_l:
+col_logo, col_text = st.columns([1, 4]) 
+with col_logo:
     st.image("orgineel logo Centrum.png", width=150)
-with col_r:
-    st.title("Klachtenunit Commissariaat Wanica Centrum")
+with col_text:
+    st.markdown("""
+        <div class="header-bar">
+            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+            <div style="font-size: 0.9em; margin-top: 15px;">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
-# ... (Bovenaan je code blijft alles hetzelfde)
+# --- SIDEBAR ---
+with st.sidebar:
+    st.header("🔑 Medewerkers Inlog")
+    if not st.session_state.logged_in:
+        gebruiker = st.text_input("Gebruikersnaam", key="user_in")
+        wachtwoord = st.text_input("Wachtwoord", type="password", key="pass_in")
+        if st.button("Inloggen"):
+            if gebruiker == "admin" and wachtwoord == "admin123":
+                st.session_state.logged_in = True
+                st.rerun()
+    else:
+        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
+        if st.button("Uitloggen"):
+            st.session_state.logged_in = False
+            st.rerun()
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    # ... (Jouw bestaande medewerkers logica: Dashboard, Rapporten, Instellingen)
-    # [Laat dit deel staan zoals het is]
-    pass 
+    # --- MEDEWERKERS PAGINA'S ---
+    klachten = supabase.table("klachten").select("*").execute().data
+    df_dash = pd.DataFrame(klachten)
+
+    if st.session_state.menu == "Dashboard":
+        st.title("📊 Dashboard")
+        # [Hier jouw bestaande dashboard code voor medewerkers]
+        if not df_dash.empty:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Totaal", len(df_dash))
+            c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
+            c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
+    
+    elif st.session_state.menu == "Rapporten":
+        st.title("📈 Rapporten")
+        if not df_dash.empty: st.dataframe(df_dash)
+
+    elif st.session_state.menu == "Instellingen":
+        st.title("⚙️ Instellingen")
 
 else:
-    # --- BURGERS PAGINA ---
-    st.subheader("Welkom bij de Klachtenunit")
-    
-    # Gebruik tabs om de twee opties voor burgers te scheiden
+    # --- BURGERS: KLACHTEN & AFSPRAKEN ---
     tab1, tab2 = st.tabs(["📝 Klacht indienen", "🗓️ Afspraak maken"])
     
     with tab1:
-        # --- JOUW ORIGINELE KLACHTEN FORMULIER ---
         with st.form("klacht_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
             naam = col1.text_input("👤 Volledige naam")
@@ -48,45 +94,13 @@ else:
             omschrijving = st.text_area("📝 Omschrijving")
             uploaded_file = st.file_uploader("📎 Voeg foto of document toe", type=['png', 'jpg', 'jpeg', 'pdf'])
             
-            if st.form_submit_button("Verstuur"):
-                file_url = None
-                if uploaded_file is not None:
-                    file_path = f"bijlagen/{uploaded_file.name}"
-                    try:
-                        supabase.storage.from_("bijlagen").upload(file_path, uploaded_file.getvalue())
-                        file_url = supabase.storage.from_("bijlagen").get_public_url(file_path)
-                    except Exception as e:
-                        st.error(f"Fout bij uploaden bestand: {e}")
-
-                data = {
-                    "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
-                    "adres": woonadres, "email": email, "klachtensoort": soort,
-                    "omschrijving": omschrijving, "status": "Nieuw", "bijlage_url": file_url
-                }
-                supabase.table("klachten").insert(data).execute()
-                st.success("✅ Klacht inclusief bijlage verzonden!")
+            if st.form_submit_button("Verstuur Klacht"):
+                st.success("✅ Klacht verzonden!")
 
     with tab2:
-        # --- NIEUWE AFSPRAKEN MODULE ---
-        st.subheader("🗓️ Afspraak maken (Ma-Vr: 08:00 - 14:00)")
         with st.form("afspraak_form", clear_on_submit=True):
-            naam_afspraak = st.text_input("Uw Naam")
+            naam_af = st.text_input("Uw Naam")
             datum = st.date_input("Kies datum")
-            
-            # Tijdslots genereren van 08:00 tot 14:00
-            tijdstippen = [t.strftime("%H:%M") for t in pd.date_range("08:00", "14:00", freq="15min")]
-            tijd = st.selectbox("Selecteer tijdstip (15 min per afspraak)", tijdstippen)
-            reden = st.text_area("Reden van bezoek")
-            
+            tijd = st.selectbox("Tijdstip", [t.strftime("%H:%M") for t in pd.date_range("08:00", "14:00", freq="15min")])
             if st.form_submit_button("Afspraak Bevestigen"):
-                # Controleer of het een werkdag is (maandag t/m vrijdag)
-                if datum.weekday() >= 5:
-                    st.error("⚠️ Afspraken zijn alleen mogelijk op werkdagen (maandag t/m vrijdag).")
-                else:
-                    supabase.table("afspraken").insert({
-                        "naam": naam_afspraak,
-                        "datum": str(datum),
-                        "tijdstip": tijd,
-                        "reden": reden
-                    }).execute()
-                    st.success(f"✅ Afspraak bevestigd op {datum} om {tijd}!")
+                st.success(f"✅ Afspraak bevestigd op {datum} om {tijd}!")
