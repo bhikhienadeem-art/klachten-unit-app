@@ -91,15 +91,40 @@ if st.session_state.logged_in:
 
     # 3. INSTELLINGEN
     elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen - Beheer")
-        with st.expander("➕ Medewerker toevoegen"):
-            with st.form("add_user"):
+        st.title("⚙️ Instellingen - Gebruikersbeheer")
+        
+        # 1. Medewerker toevoegen
+        with st.expander("➕ Nieuwe medewerker toevoegen"):
+            with st.form("add_user_form"):
                 u = st.text_input("Gebruikersnaam")
                 p = st.text_input("Wachtwoord", type="password")
-                if st.form_submit_button("Toevoegen"):
-                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
-                    st.success("Toegevoegd!")
+                r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
+                if st.form_submit_button("Opslaan"):
+                    # Wachtwoord zou je hier idealiter moeten hashen!
+                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
+                    st.success(f"Medewerker {u} toegevoegd!")
+                    st.rerun()
 
+        # 2. Lijst met medewerkers tonen & verwijderen
+        st.subheader("👥 Huidige medewerkers")
+        medewerkers = supabase.table("medewerkers").select("*").execute().data
+        
+        # Maak een DataFrame voor een mooi overzicht
+        if medewerkers:
+            df_users = pd.DataFrame(medewerkers)
+            
+            # Toon tabel
+            st.table(df_users[['gebruikersnaam', 'rol']])
+            
+            # Verwijder optie
+            st.write("---")
+            te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
+            if st.button("Verwijder deze medewerker"):
+                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
+                st.warning(f"Gebruiker {te_verwijderen} verwijderd.")
+                st.rerun()
+        else:
+            st.info("Geen medewerkers gevonden.")
 
 # --- FORMULIER (Alleen als niet ingelogd) ---
 else:
