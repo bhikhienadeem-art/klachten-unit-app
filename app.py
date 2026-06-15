@@ -24,7 +24,7 @@ st.markdown("""
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
         <div style="font-style: italic;">Welkom op de officiële klachtenpagina.</div>
         <div style="font-size: 0.9em; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
-            📍 Tawajarieweg 20 | 📞 (+597) 366660 | 💬 WhatsApp: (+597) 366660 | ✉️ klachtenunitwanicacentrum@gmail.com
+            📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
         </div>
     </div>
 """, unsafe_allow_html=True)
