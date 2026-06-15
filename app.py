@@ -53,9 +53,6 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- PAGINA LOGICA ---
-if st.session_state.logged_in:
-    
     # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
