@@ -10,7 +10,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 
-# --- CSS STYLING (Stap 1: Professionele look) ---
+# --- CSS STYLING ---
 st.markdown("""
     <style>
     .stApp { background-color: #f4f7f9; }
@@ -61,6 +61,7 @@ if st.session_state.logged_in:
                 col_a, col_b = st.columns(2)
                 col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
                 col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon', '-')}")
                 col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
                 col_b.write(f"**📋 Soort:** {k.get('klachtensoort', '-')}")
                 st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
@@ -109,6 +110,7 @@ with st.form("klacht_form", clear_on_submit=True):
     with col1:
         naam = st.text_input("👤 Volledige naam")
         id_nr = st.text_input("🆔 ID Nummer")
+        telefoon = st.text_input("📞 Telefoon/WhatsApp nummer")
         woonadres = st.text_input("🏠 Woonadres")
     with col2:
         email = st.text_input("📧 E-mailadres")
@@ -118,7 +120,7 @@ with st.form("klacht_form", clear_on_submit=True):
     omschrijving = st.text_area("📝 Omschrijving of voorstel voor oplossing")
     if st.form_submit_button("Verstuur klacht"):
         supabase.table("klachten").insert({
-            "volledige_naam": naam, "id_nummer": id_nr, "adres": woonadres, 
+            "volledige_naam": naam, "id_nummer": id_nr, "telefoon": telefoon, "adres": woonadres, 
             "email": email, "klachtensoort": soort, "omschrijving": omschrijving, 
             "status": "Nieuw", "bijlage_url": uploaded_file.name if uploaded_file else None
         }).execute()
