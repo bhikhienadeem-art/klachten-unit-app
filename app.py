@@ -133,36 +133,27 @@ if st.session_state.logged_in:
                         st.success("✅ Opgeslagen en gemaild!")
                         st.rerun()
 
-    elif st.session_state.menu == "Rapporten":
+   elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         
         if not df_dash.empty:
-            # 1. Tel het aantal klachten per soort
             df_plot = df_dash['klachtensoort'].value_counts().reset_index()
             df_plot.columns = ['Soort', 'Aantal']
             
-            # 2. Maak de staafdiagram (Bar Chart)
-            fig = px.bar(
-                df_plot, 
-                x='Soort', 
-                y='Aantal', 
-                color='Soort', # Dit zorgt voor de verschillende kleuren
-                title="Aantal klachten per soort",
-                labels={'Aantal': 'Aantal klachten', 'Soort': 'Soort klacht'}
-            )
+            # Kolommen voor side-by-side of onder elkaar
+            col1, col2 = st.columns(2)
             
-            # Pas de layout aan voor betere leesbaarheid
-            fig.update_layout(showlegend=False)
+            # Staafdiagram
+            fig_bar = px.bar(df_plot, x='Soort', y='Aantal', color='Soort', title="Staafdiagram: Klachten per soort")
+            col1.plotly_chart(fig_bar, use_container_width=True)
             
-            # 3. Toon de grafiek in Streamlit
-            st.plotly_chart(fig, use_container_width=True)
+            # Cirkeldiagram (Pie Chart)
+            fig_pie = px.pie(df_plot, values='Aantal', names='Soort', title="Cirkeldiagram: Verhouding klachten")
+            col2.plotly_chart(fig_pie, use_container_width=True)
             
-            # Optioneel: Download knop en tabel eronder
-            st.download_button("📥 Download CSV", data=df_dash.to_csv(index=False), file_name='klachten.csv')
             st.dataframe(df_dash)
         else:
             st.info("Nog geen klachten om te tonen.")
-
 else:
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
