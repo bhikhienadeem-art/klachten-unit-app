@@ -206,7 +206,7 @@ else:
         col1, col2 = st.columns(2)
         
         # Invoervelden met icoontjes
-        naam = col1.text_input("👤 Naam")
+        naam = col1.text_input("👤 Volledige Naam")
         id_nr = col1.text_input("🆔 ID Nummer")
         telefoon = col1.text_input("📞 Telefoon/Whatsapp Nummer")
         woonadres = col1.text_input("🏠 Woonadres")
