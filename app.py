@@ -115,8 +115,6 @@ if st.session_state.logged_in:
             if st.button("❌ Verwijder deze medewerker"):
                 supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute(); st.rerun()
 
-
-
 else:
     with st.form("klacht_form", clear_on_submit=True):
         st.subheader("📝 Klacht Indienen")
