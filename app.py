@@ -35,28 +35,33 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
 # --- CSS & HEADER ---
 st.markdown("""
     <style>
+    /* Verberg de Streamlit menu-balk (witte balk) */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
     /* Achtergrondkleur voor de gehele app en sidebar */
     .stApp, [data-testid="stSidebar"] { 
-        background-color: #D6E0E5; 
+        background-color: #90D5FF; 
     }
     /* Grotere Header styling */
     .header-bar { 
         background-color: #003366; 
         color: white; 
-        padding: 40px; /* Meer ruimte gemaakt (was 25px) */
+        padding: 40px; 
         text-align: center; 
         border: 5px solid #ffcc00; 
         border-radius: 15px; 
         margin-bottom: 30px; 
     }
     .header-bar h1 {
-        font-size: 3em; /* Tekst groter gemaakt */
+        font-size: 3em; 
         margin-bottom: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# De header container blijft hetzelfde, de CSS hierboven regelt nu de grotere weergave:
+# De header container
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
@@ -65,7 +70,6 @@ st.markdown("""
         </div>
     </div>
 """, unsafe_allow_html=True)
-
 # --- SESSIE & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
