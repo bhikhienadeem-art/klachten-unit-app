@@ -82,13 +82,13 @@ with st.sidebar:
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
-    
-    # Logo nu onderaan de sidebar
+    # Logo onderaan de sidebar (groter formaat)
     st.markdown("---")
     try: 
-        st.image("orgineel logo Centrum.png", width=150)
+        st.image("orgineel logo Centrum.png", width=250)
     except: 
-        st.warning("Logo bestand ontbreekt")# --- PAGINA LOGICA ---
+        st.warning("Logo bestand niet gevonden")
+        # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     klachten = supabase.table("klachten").select("*").execute().data
     df_dash = pd.DataFrame(klachten)
