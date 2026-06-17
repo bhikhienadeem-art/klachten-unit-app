@@ -86,10 +86,9 @@ if st.session_state.logged_in:
                 st.rerun()
     else:
     # --- VOLLEDIG KLACHT FORMULIER ---
+    
     st.subheader("📝 Klacht indienen")
-    with st.form("klacht_form_unique", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        
+ 
         naam = col1.text_input("👤 Volledige Naam")
         id_nr = col1.text_input("🆔 ID Nummer")
         telefoon = col1.text_input("📞 Telefoon/Whatsapp Nummer")
