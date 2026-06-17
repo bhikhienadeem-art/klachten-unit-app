@@ -75,8 +75,11 @@ with st.sidebar:
         st.session_state.menu = st.radio("🧭 Navigatie", ["📊 Dashboard", "📈 Rapporten", "⚙️ Instellingen"])
         if st.button("🚪 Uitloggen"): st.session_state.logged_in = False; st.rerun()
     st.markdown("---")
-    try: st.image("orgineel logo Centrum.png", width=250)
-    except: st.warning("Logo bestand niet gevonden")
+    try: 
+        # Groter logo hier:
+        st.image("orgineel logo Centrum.png", width=300)
+    except: 
+        st.warning("Logo bestand niet gevonden")
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
