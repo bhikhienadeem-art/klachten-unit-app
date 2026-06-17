@@ -32,8 +32,14 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         st.error(f"Mail fout: {e}")
         return False
 
-# --- UI & HEADER ---
-st.markdown("""<style>.header-bar { background-color: #003366; color: white; padding: 30px; text-align: center; border: 5px solid #ffcc00; border-radius: 15px; margin-bottom: 20px; }</style>""", unsafe_allow_html=True)
+# --- CSS & ACHTERGROND ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #E3F2FD; }
+    .header-bar { background-color: #003366; color: white; padding: 30px; text-align: center; border: 5px solid #ffcc00; border-radius: 15px; margin-bottom: 20px; }
+    </style>
+""", unsafe_allow_html=True)
+
 st.markdown("""<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1>📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
 
 # --- SIDEBAR & AUTH ---
@@ -72,7 +78,7 @@ if st.session_state.logged_in:
                 notitie = st.text_area("📝 Interne notitie", value=k.get('interne_notitie', ''), key=f"n_{row_id}")
                 bericht = st.text_area("✉️ Bericht naar de burger", key=f"b_{row_id}")
                 col1, col2 = st.columns(2)
-                if col1.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
+                if col1.button("💾 Opslaan & Mailen", key=f"save_{row_id}"):
                     supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
                     if bericht: stuur_mail(k.get('email'), "Update over uw klacht", f"<p>{bericht}</p>")
                     st.success("Opgeslagen!")
@@ -113,7 +119,7 @@ else:
     with st.form("klacht_form", clear_on_submit=True):
         st.subheader("📝 Klacht Indienen")
         c1, c2 = st.columns(2)
-        naam = c1.text_input("👤 Volledige Naam")
+        naam = c1.text_input("👤 Naam")
         email = c2.text_input("📧 E-mail")
         id_nr = c1.text_input("🆔 ID Nummer")
         soort = c2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
