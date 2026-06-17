@@ -33,11 +33,37 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         return False
 
 # --- CSS & HEADER ---
-st.markdown("""<style>.header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }</style>""", unsafe_allow_html=True)
-col_logo, col_text = st.columns([1, 4]) 
-with col_logo: st.image("orgineel logo Centrum.png", width=150)
-with col_text: st.markdown('<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1><div style="font-size: 0.9em;">📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div></div>', unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    /* Achtergrondkleur voor de gehele app */
+    .stApp { 
+        background-color: #66CDAA; 
+    }
+    /* Header styling met donkerblauw contrast */
+    .header-bar { 
+        background-color: #003366; 
+        color: white; 
+        padding: 25px; 
+        text-align: center; 
+        border: 5px solid #ffcc00; 
+        border-radius: 10px; 
+        margin-bottom: 30px; 
+    }
+    </style>
+""", unsafe_allow_html=True)
 
+col_logo, col_text = st.columns([1, 4]) 
+with col_logo: 
+    st.image("orgineel logo Centrum.png", width=150)
+with col_text: 
+    st.markdown("""
+        <div class="header-bar">
+            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+            <div style="font-size: 0.9em;">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 # --- SESSIE & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
