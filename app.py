@@ -133,6 +133,7 @@ if st.session_state.logged_in:
                         st.success("✅ Opgeslagen en gemaild!")
                         st.rerun()
 
+
 elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         
