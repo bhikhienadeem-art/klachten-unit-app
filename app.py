@@ -101,32 +101,27 @@ if st.session_state.logged_in:
     klachten = supabase.table("klachten").select("*").execute().data
     df_dash = pd.DataFrame(klachten)
 
-    # --- DASHBOARD VOOR MEDEWERKERS ---
-    if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard - Klachtenbeheer")
-        
-        # Data ophalen
-        klachten = supabase.table("klachten").select("*").execute().data
-        df_dash = pd.DataFrame(klachten)
-        
-        # --- METRIC CARDS ---
-        if not df_dash.empty:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Totaal Klachten", len(df_dash))
-            c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
-            c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
-            st.markdown("---")
-        
-        # --- KLACHTEN LIJST ---
+    # --- KLACHTEN LIJST (MET INTERNE NOTITIE) ---
         if klachten:
             for k in klachten:
                 row_id = k.get('id')
                 status = k.get('status', 'Nieuw')
                 
                 with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {k.get('klachtensoort', '-')} | Status: {status}"):
-                    # ... (jouw expander content blijft hier staan)
-                    st.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                    col_a, col_b = st.columns(2)
+                    col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
+                    col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                    col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
                     
+                    col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                    if k.get('bijlage_url'):
+                        col_b.markdown(f"**📎 Bijlage:** [Bekijk bestand]({k['bijlage_url']})")
+                    
+                    st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                    
+                    st.markdown("---")
+                    
+                    # Status en Notitie bijwerken
                     status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
                     huidige_idx = status_opties.index(status) if status in status_opties else 0
                     
@@ -135,11 +130,16 @@ if st.session_state.logged_in:
                     
                     if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
                         try:
-                            supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
+                            # Nu de kolom bestaat, zal deze update correct werken
+                            supabase.table("klachten").update({
+                                "status": nieuwe_status, 
+                                "interne_notitie": notitie
+                            }).eq("id", row_id).execute()
+                            
                             st.success("✅ Opgeslagen!")
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Fout: {e}")
+                            st.error(f"Fout bij opslaan: {e}")
         else:
             st.info("Geen klachten gevonden in het systeem.")
 
