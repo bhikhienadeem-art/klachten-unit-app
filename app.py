@@ -122,4 +122,8 @@ else:
         omschrijving = st.text_area("✍️ Omschrijving")
         file = st.file_uploader("📎 Bijlage")
         if st.form_submit_button("🚀 Verstuur Klacht"):
-            t_id = f"WAN-{
+            t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+            supabase.table("klachten").insert({"volledige_naam": naam, "email": email, "id_nummer": id_nr, "telefoon_whatsapp": telefoon, "adres": adres, "omschrijving": omschrijving, "klachtensoort": soort, "status": "Nieuw", "ticket_id": t_id}).execute()
+            stuur_mail(email, "Bevestiging", "Bedankt voor uw melding.")
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {t_id}", "Er is een nieuwe melding.", bestand=file)
+            st.success("✅ Uw klacht is verzonden!")
