@@ -186,7 +186,8 @@ if klachten:
                     except Exception as e:
                         st.error(f"Fout: {e}")
                 else:
-                    st.warning("⚠️ Schrijf eerst een bericht.")        else:
+                    st.warning("⚠️ Schrijf eerst een bericht.")       
+                else:
             st.info("Geen klachten gevonden in het systeem.")
 
     elif st.session_state.menu == "Rapporten":
