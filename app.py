@@ -34,19 +34,35 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
 # --- CSS & ACHTERGROND ---
 st.markdown("""
     <style>
-    /* MainMenu en footer mag je hidden laten als je dat wilt */
+    /* MainMenu en footer verbergen */
     #MainMenu {visibility: hidden;} 
     footer {visibility: hidden;}
     
-    /* HAAL 'header {visibility: hidden;}' WEG OF ZET HET OP VISIBLE */
+    /* Header zichtbaar voor navigatie/sidebar */
     header {visibility: visible;} 
     
     .stApp { background-color: #90D5FF; }
     [data-testid="stSidebar"] { background-color: #90D5FF; }
     
     .header-bar { 
-        background-color: #003366; color: white; padding: 30px; text-align: center; 
-        border: 5px solid #ffcc00; border-radius: 15px; margin-bottom: 20px; 
+        background-color: #003366; 
+        color: white; 
+        padding: 30px; 
+        text-align: center; 
+        border: 5px solid #ffcc00; 
+        border-radius: 15px; 
+        margin-bottom: 20px; 
+    }
+
+    /* Mobiele optimalisatie */
+    @media (max-width: 600px) {
+        .header-bar { 
+            padding: 10px; 
+            font-size: 14px; 
+        }
+        .header-bar h1 { 
+            font-size: 18px; 
+        }
     }
     </style>
 """, unsafe_allow_html=True)
