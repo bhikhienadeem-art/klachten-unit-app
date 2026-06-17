@@ -21,11 +21,9 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         msg['From'] = "Klachtenunit Wanica <klachtenunitwanicacentrum@gmail.com>"
         msg['To'] = ontvanger
         msg.add_alternative(html_inhoud, subtype='html')
-        
-        if bestand is not None:
+        if bestand:
             bestand.seek(0)
             msg.add_attachment(bestand.read(), maintype='application', subtype='octet-stream', filename=bestand.name)
-        
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login("klachtenunitwanicacentrum@gmail.com", "nbngichzpmlgzglc")
             smtp.send_message(msg)
@@ -34,33 +32,16 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         st.error(f"Mail fout: {e}")
         return False
 
-# --- CSS ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #e3f2fd; }
-    .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- HEADER ---
+# --- CSS & HEADER ---
+st.markdown("""<style>.header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }</style>""", unsafe_allow_html=True)
 col_logo, col_text = st.columns([1, 4]) 
-with col_logo:
-    try: st.image("orgineel logo Centrum.png", width=150)
-    except: st.warning("Logo bestand ontbreekt")
-with col_text:
-    st.markdown("""
-        <div class="header-bar">
-            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-            <div style="font-size: 0.9em; margin-top: 15px;">
-                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+with col_logo: st.image("orgineel logo Centrum.png", width=150)
+with col_text: st.markdown('<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1><div style="font-size: 0.9em;">📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div></div>', unsafe_allow_html=True)
 
-# --- SESSIE ---
+# --- SESSIE & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
-# --- SIDEBAR ---
 with st.sidebar:
     if not st.session_state.logged_in:
         user = st.text_input("Gebruikersnaam")
@@ -70,57 +51,60 @@ with st.sidebar:
             if check:
                 st.session_state.logged_in = True
                 st.rerun()
-            else:
-                st.error("Ongeldige gegevens")
+            else: st.error("Ongeldige gegevens")
     else:
+        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
 
-# --- CONTENT ---
-if not st.session_state.logged_in:
-    st.subheader("📝 Klacht indienen")
+# --- LOGICA ---
+if st.session_state.logged_in:
+    klachten = supabase.table("klachten").select("*").execute().data
+    df = pd.DataFrame(klachten)
+    
+    if st.session_state.menu == "Dashboard":
+        st.title("📊 Dashboard")
+        for k in klachten:
+            with st.expander(f"Klacht: {k['ticket_id']} - {k['volledige_naam']}"):
+                st.write(f"**Omschrijving:** {k['omschrijving']}")
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], index=["Nieuw", "In behandeling", "Afgehandeld"].index(k.get('status', 'Nieuw')), key=k['id'])
+                if st.button("Update status", key=f"btn_{k['id']}"):
+                    supabase.table("klachten").update({"status": nieuwe_status}).eq("id", k['id']).execute()
+                    st.rerun()
+
+    elif st.session_state.menu == "Rapporten":
+        st.title("📈 Rapporten")
+        if not df.empty:
+            st.dataframe(df)
+            st.plotly_chart(px.pie(df, names='klachtensoort', title="Klachten per categorie"))
+
+    elif st.session_state.menu == "Instellingen":
+        st.title("⚙️ Gebruikersbeheer")
+        with st.form("add_user"):
+            u = st.text_input("Nieuwe gebruikersnaam")
+            p = st.text_input("Wachtwoord", type="password")
+            if st.form_submit_button("Toevoegen"):
+                supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
+                st.success("Medewerker toegevoegd!")
+
+else:
+    # --- INDIENEN KLACHT ---
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        naam = col1.text_input("Volledige naam")
+        naam = col1.text_input("Naam")
         id_nr = col1.text_input("ID Nummer")
-        telefoon = col1.text_input("Telefoon/WhatsApp")
-        woonadres = col1.text_input("Woonadres")
-        email = col2.text_input("E-mailadres")
-        soort = col2.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        telefoon = col1.text_input("Telefoon")
+        email = col2.text_input("E-mail")
+        soort = col2.selectbox("Soort", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("Omschrijving")
-        uploaded_file = st.file_uploader("Bijlage (optioneel)", type=['png', 'jpg', 'jpeg', 'pdf'])
+        file = st.file_uploader("Bijlage")
         
         if st.form_submit_button("Verstuur Klacht"):
-            ticket_nr = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+            t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+            supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "email": email, "omschrijving": omschrijving, "status": "Nieuw", "ticket_id": t_id, "klachtensoort": soort}).execute()
             
-            supabase.table("klachten").insert({
-                "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
-                "adres": woonadres, "email": email, "klachtensoort": soort,
-                "omschrijving": omschrijving, "status": "Nieuw", "ticket_id": ticket_nr
-            }).execute()
-            
-            # MAIL BURGER
-            mail_burger = f"""<html><body style="font-family:sans-serif; color:#333;">
-                <h2 style="color:#004a99;">Bevestiging van uw klacht</h2>
-                <p>Beste {naam},</p>
-                <p>Hartelijk dank voor het indienen van uw klacht bij het Commissariaat Wanica Centrum. Wij hebben uw melding (Referentie: <b>{ticket_nr}</b>) in goede orde ontvangen.</p>
-                <p>Ons team zal uw klacht zo spoedig mogelijk in behandeling nemen. Wij houden u via de e-mail op de hoogte van de voortgang.</p>
-                <p>Met vriendelijke groet,<br>Klachtenunit Wanica Centrum</p>
-                </body></html>"""
-            stuur_mail(email, f"Bevestiging klacht: {ticket_nr}", mail_burger)
-            
-            # MAIL MEDEWERKER
-            mail_med = f"""<html><body style="font-family:sans-serif;">
-                <h2 style="color:#d32f2f;">Nieuwe klacht binnengekomen: {ticket_nr}</h2>
-                <table border="1" cellpadding="5" style="border-collapse:collapse;">
-                    <tr><td><b>Naam:</b></td><td>{naam}</td></tr>
-                    <tr><td><b>Soort:</b></td><td>{soort}</td></tr>
-                    <tr><td><b>Omschrijving:</b></td><td>{omschrijving}</td></tr>
-                </table>
-                </body></html>"""
-            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {ticket_nr}", mail_med, bestand=uploaded_file)
-            
-            st.success("✅ Klacht succesvol verzonden!")
-else:
-    st.write("Welkom beheerder. U bent succesvol ingelogd.")
+            # Mails (zoals eerder besproken)
+            stuur_mail(email, "Bevestiging", f"Beste {naam}, uw melding {t_id} is ontvangen.")
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht {t_id}", "Check dashboard", bestand=file)
+            st.success("Verzonden!")
