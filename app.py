@@ -85,8 +85,41 @@ if st.session_state.logged_in:
                 supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
                 st.rerun()
 else:
+    else:
+    # --- VOLLEDIG KLACHT FORMULIER ---
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form_unique", clear_on_submit=True):
-        naam = st.text_input("Naam")
-        if st.form_submit_button("Verstuur"):
-            st.success("Klacht ingediend!")
+        col1, col2 = st.columns(2)
+        
+        naam = col1.text_input("👤 Volledige Naam")
+        id_nr = col1.text_input("🆔 ID Nummer")
+        telefoon = col1.text_input("📞 Telefoon/Whatsapp Nummer")
+        woonadres = col1.text_input("🏠 Woonadres")
+        
+        email = col2.text_input("📧 E-mail")
+        soort = col2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        
+        omschrijving = st.text_area("📝 Omschrijving van uw klacht")
+        file = st.file_uploader("📎 Bijlage (Foto of Document uploaden)")
+        
+        if st.form_submit_button("Klacht Indienen 🚀"):
+            if naam and omschrijving:
+                # Ticket ID aanmaken
+                t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+                
+                # Opslaan in database
+                supabase.table("klachten").insert({
+                    "volledige_naam": naam, 
+                    "id_nummer": id_nr, 
+                    "telefoon_whatsapp": telefoon,
+                    "adres": woonadres, 
+                    "email": email, 
+                    "omschrijving": omschrijving,
+                    "status": "Nieuw", 
+                    "ticket_id": t_id, 
+                    "klachtensoort": soort
+                }).execute()
+                
+                st.success("✅ Uw klacht is succesvol ingediend! Ticket ID: " + t_id)
+            else:
+                st.warning("⚠️ Vul minimaal uw naam en de omschrijving in.")
