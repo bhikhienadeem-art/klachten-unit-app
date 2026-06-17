@@ -34,11 +34,8 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
 # --- CSS & ACHTERGROND ---
 st.markdown("""
     <style>
-    /* MainMenu en footer verbergen */
     #MainMenu {visibility: hidden;} 
     footer {visibility: hidden;}
-    
-    /* Header zichtbaar voor navigatie/sidebar */
     header {visibility: visible;} 
     
     .stApp { background-color: #90D5FF; }
@@ -47,27 +44,39 @@ st.markdown("""
     .header-bar { 
         background-color: #003366; 
         color: white; 
-        padding: 30px; 
+        padding: 20px; 
         text-align: center; 
         border: 5px solid #ffcc00; 
         border-radius: 15px; 
         margin-bottom: 20px; 
     }
-
-    /* Mobiele optimalisatie */
+    .header-text { text-align: left; }
+    
     @media (max-width: 600px) {
-        .header-bar { 
-            padding: 10px; 
-            font-size: 14px; 
-        }
-        .header-bar h1 { 
-            font-size: 18px; 
-        }
+        .header-bar { padding: 10px; }
+        .header-bar h1 { font-size: 16px; }
+        .header-bar div { font-size: 12px; }
     }
     </style>
 """, unsafe_allow_html=True)
-st.markdown("""<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1>📍 Tawajarieweg 20 (Lelydorp) | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
 
+# --- HEADER MET LOGO ---
+# Gebruik st.columns voor de indeling
+col1, col2 = st.columns([1, 4]) 
+
+with col1:
+    # Vervang 'logo_bestand.png' door de echte bestandsnaam van je logo
+    st.image("logo_bestand.png", use_container_width=True) 
+
+with col2:
+    st.markdown("""
+        <div class="header-bar">
+            <h1 style="margin: 0;">Klachtenunit Commissariaat Wanica Centrum</h1>
+            <div class="header-text">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 # --- SIDEBAR & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 with st.sidebar:
