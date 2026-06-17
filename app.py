@@ -35,8 +35,8 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
 # --- CSS & HEADER ---
 st.markdown("""
     <style>
-    /* Achtergrondkleur voor de gehele app */
-    .stApp { 
+    /* Achtergrondkleur voor de gehele app en sidebar */
+    .stApp, [data-testid="stSidebar"] { 
         background-color: #90D5FF; 
     }
     /* Header styling met donkerblauw contrast */
@@ -64,11 +64,13 @@ with col_text:
             </div>
         </div>
     """, unsafe_allow_html=True)
+
 # --- SESSIE & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
 with st.sidebar:
+    st.markdown("## Medewerkers Login") # Tekst toegevoegd
     if not st.session_state.logged_in:
         user = st.text_input("Gebruikersnaam")
         pw = st.text_input("Wachtwoord", type="password")
@@ -83,7 +85,6 @@ with st.sidebar:
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
-
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     klachten = supabase.table("klachten").select("*").execute().data
