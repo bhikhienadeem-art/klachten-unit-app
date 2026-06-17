@@ -14,18 +14,19 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- MAIL FUNCTIE ---
-def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
+def stuur_mail(ontvanger, onderwerp, html_inhoud):
     try:
         msg = EmailMessage()
         msg['Subject'] = onderwerp
         msg['From'] = "Klachtenunit Wanica <klachtenunitwanicacentrum@gmail.com>"
         msg['To'] = ontvanger
+        # BCC toevoegen aan jezelf zodat de mail in je eigen Inbox/Verzonden map verschijnt
+        msg['Bcc'] = "klachtenunitwanicacentrum@gmail.com" 
         msg.add_alternative(html_inhoud, subtype='html')
-        if bestand:
-            bestand.seek(0)
-            msg.add_attachment(bestand.read(), maintype='application', subtype='octet-stream', filename=bestand.name)
+        
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login("klachtenunitwanicacentrum@gmail.com", "nbngichzpmlgzglc")
+            # Verstuur naar ontvanger EN de BCC
             smtp.send_message(msg)
         return True
     except Exception as e:
@@ -141,13 +142,26 @@ if st.session_state.logged_in:
                 nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{k['id']}")
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
                 
-                if st.button("💾 Status & Notitie Opslaan", key=f"save_{k['id']}"):
-                    supabase.table("klachten").update({
-                        "status": nieuwe_status, 
-                        "interne_notitie": notitie
-                    }).eq("id", k['id']).execute()
-                    st.success("Opgeslagen!")
-                    st.rerun()
+               if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
+    # 1. Update de status in Supabase
+    supabase.table("klachten").update({
+        "status": nieuwe_status,
+        "interne_notitie": notitie
+    }).eq("id", row_id).execute()
+    
+    # 2. Stel de e-mail op
+    mail_inhoud = f"""
+    <p>Beste {k.get('volledige_naam')},</p>
+    <p>De status van uw klacht ({k.get('ticket_id')}) is gewijzigd naar: <b>{nieuwe_status}</b>.</p>
+    <p>{mail_bericht}</p>
+    <p>Met vriendelijke groet,<br>Klachtenunit Wanica</p>
+    """
+    
+    # 3. Verstuur de mail
+    if stuur_mail(k.get('email'), f"Update klacht {k.get('ticket_id')}", mail_inhoud):
+        st.success("✅ Opgeslagen en mail succesvol verzonden!")
+    
+    st.rerun()
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
