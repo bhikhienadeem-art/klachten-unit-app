@@ -90,14 +90,10 @@ if st.session_state.logged_in:
                     supabase.table("klachten").delete().eq("id", row_id).execute(); st.rerun()
 
     elif st.session_state.menu == "📈 Rapporten":
-        st.title("📈 Rapporten")
-        if not df_dash.empty:
-            c1, c2 = st.columns(2)
-            c1.plotly_chart(px.bar(df_dash['klachtensoort'].value_counts().reset_index(), x='klachtensoort', y='count'), use_container_width=True)
-            c2.plotly_chart(px.pie(df_dash, names='klachtensoort'), use_container_width=True)
-            st.dataframe(df_dash, use_container_width=True)
+        st.title("📈 Rapporten & Detailoverzicht")
+        # ... (jouw code voor rapporten)
 
-     elif st.session_state.menu == "⚙️ Instellingen":
+    elif st.session_state.menu == "⚙️ Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form", clear_on_submit=True):
@@ -107,6 +103,7 @@ if st.session_state.logged_in:
                 if st.form_submit_button("💾 Opslaan"):
                     supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
                     st.success("✅ Toegevoegd!"); st.rerun()
+        
         st.subheader("👥 Huidige medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
         if medewerkers:
