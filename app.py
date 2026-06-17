@@ -73,7 +73,7 @@ if st.session_state.logged_in:
         st.title("📊 Dashboard")
         for k in klachten:
             row_id = k.get('id')
-            with st.expander(f"👤 {k.get('volledige_naam')} | 🚦 Status: {k.get('status')} | {k.get('ticket_id')}"):
+            with st.expander(f"👤 {k.get('volledige_naam')} | 🚦 Status: {k.get('status')}"):
                 c1, c2 = st.columns(2)
                 c1.write(f"**🆔 ID:** {k.get('id_nummer')}\n**📞 Tel:** {k.get('telefoon_whatsapp')}\n**🏠 Adres:** {k.get('adres')}")
                 c2.write(f"**📧 E-mail:** {k.get('email')}\n**📂 Soort:** {k.get('klachtensoort')}")
@@ -84,21 +84,22 @@ if st.session_state.logged_in:
                 col1, col2 = st.columns(2)
                 if col1.button("💾 Opslaan & Mailen", key=f"save_{row_id}"):
                     supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
-                    if bericht: stuur_mail(k.get('email'), f"Update klacht {k.get('ticket_id')}", f"<p>{bericht}</p>")
-                    st.success("Opgeslagen!"); st.rerun()
+                    if bericht: stuur_mail(k.get('email'), "Update over uw klacht", f"<p>{bericht}</p>")
+                    st.success("Opgeslagen!")
+                    st.rerun()
                 if col2.button("🗑️ Verwijderen", key=f"del_{row_id}"):
-                    supabase.table("klachten").delete().eq("id", row_id).execute(); st.rerun()
+                    supabase.table("klachten").delete().eq("id", row_id).execute()
+                    st.rerun()
 
-  elif st.session_state.menu == "📈 Rapporten":
+
+
+    elif st.session_state.menu == "📈 Rapporten":
         st.title("📈 Rapporten & Detailoverzicht")
         if not df_dash.empty:
             c1, c2 = st.columns(2)
             c1.plotly_chart(px.bar(df_dash['klachtensoort'].value_counts().reset_index(), x='klachtensoort', y='count'), use_container_width=True)
             c2.plotly_chart(px.pie(df_dash, names='klachtensoort'), use_container_width=True)
             st.dataframe(df_dash, use_container_width=True)
-            csv = df_dash.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Download CSV", csv, "klachten.csv", "text/csv")
-
 
     elif st.session_state.menu == "⚙️ Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
@@ -118,7 +119,6 @@ if st.session_state.logged_in:
             te_verwijderen = st.selectbox("🗑️ Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
             if st.button("❌ Verwijder deze medewerker"):
                 supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute(); st.rerun()
-
 else:
     with st.form("klacht_form", clear_on_submit=True):
         st.subheader("📝 Klacht Indienen")
