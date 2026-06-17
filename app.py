@@ -84,7 +84,6 @@ if st.session_state.logged_in:
             if st.form_submit_button("Toevoegen"):
                 supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
                 st.rerun()
-else:
     else:
     # --- VOLLEDIG KLACHT FORMULIER ---
     st.subheader("📝 Klacht indienen")
