@@ -97,9 +97,25 @@ if st.session_state.logged_in:
             c2.plotly_chart(px.pie(df_dash, names='klachtensoort'), use_container_width=True)
             st.dataframe(df_dash, use_container_width=True)
 
-    elif st.session_state.menu == "⚙️ Instellingen":
-        st.title("⚙️ Instellingen")
-        # (Beheer code blijft gelijk)
+     elif st.session_state.menu == "⚙️ Instellingen":
+        st.title("⚙️ Instellingen - Gebruikersbeheer")
+        with st.expander("➕ Nieuwe medewerker toevoegen"):
+            with st.form("add_user_form", clear_on_submit=True):
+                u = st.text_input("👤 Gebruikersnaam")
+                p = st.text_input("🔑 Wachtwoord", type="password")
+                r = st.selectbox("🎭 Rol", ["Admin", "Medewerker", "Viewer"])
+                if st.form_submit_button("💾 Opslaan"):
+                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
+                    st.success("✅ Toegevoegd!"); st.rerun()
+        st.subheader("👥 Huidige medewerkers")
+        medewerkers = supabase.table("medewerkers").select("*").execute().data
+        if medewerkers:
+            st.table(pd.DataFrame(medewerkers)[['gebruikersnaam', 'rol']])
+            te_verwijderen = st.selectbox("🗑️ Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
+            if st.button("❌ Verwijder deze medewerker"):
+                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute(); st.rerun()
+
+
 
 else:
     with st.form("klacht_form", clear_on_submit=True):
