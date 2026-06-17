@@ -35,15 +35,16 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
 # --- CSS & ACHTERGROND ---
 st.markdown("""
     <style>
+    /* Verberg de standaard Streamlit menu/header balk */
+    #MainMenu {visibility: hidden;} 
+    header {visibility: hidden;} 
+    footer {visibility: hidden;}
+
     /* Achtergrond van de hele pagina */
-    .stApp { 
-        background-color: #90D5FF; 
-    }
+    .stApp { background-color: #90D5FF; }
     
     /* Achtergrond van de sidebar */
-    [data-testid="stSidebar"] { 
-        background-color: #90D5FF; 
-    }
+    [data-testid="stSidebar"] { background-color: #90D5FF; }
     
     /* Header styling */
     .header-bar { 
