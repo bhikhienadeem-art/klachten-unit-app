@@ -65,7 +65,7 @@ col1, col2 = st.columns([1, 4])
 
 with col1:
     # GEBRUIK DE EXACTE NAAM UIT JE REPOSITORY
-    st.image("orgineel logo Centrum.png", use_container_width=True) 
+    st.image("logo_bestand.png", use_container_width=True) 
 
 with col2:
     st.markdown("""
