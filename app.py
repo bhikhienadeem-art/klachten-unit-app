@@ -100,18 +100,38 @@ if st.session_state.logged_in:
         for k in klachten:
             row_id = k.get('id')
             status = k.get('status', 'Nieuw')
+            
             with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {status}"):
+                # Hier tonen we de extra gegevens
+                st.subheader("📋 Gegevens van de burger")
+                col_a, col_b = st.columns(2)
+                col_a.write(f"**ID Nummer:** {k.get('id_nummer', '-')}")
+                col_a.write(f"**Telefoon:** {k.get('telefoon_whatsapp', '-')}")
+                col_b.write(f"**E-mail:** {k.get('email', '-')}")
+                col_b.write(f"**Adres:** {k.get('adres', '-')}")
+                st.write(f"**Soort klacht:** {k.get('klachtensoort', '-')}")
+                st.markdown("---")
+                
+                # Hieronder volgt je bestaande status/notitie code
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
+                
                 status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=status_opties.index(status) if status in status_opties else 0, key=f"status_{row_id}")
+                nieuwe_status = st.selectbox("Status", status_opties, index=status_opties.index(status) if status in status_opties else 0, key=f"status_{row_id}")
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
                 mail_bericht = st.text_area("Bericht naar de burger", key=f"msg_{row_id}")
 
                 if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
-                    supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
+                    # Database update
+                    supabase.table("klachten").update({
+                        "status": nieuwe_status,
+                        "interne_notitie": notitie
+                    }).eq("id", row_id).execute()
+                    
+                    # Mail versturen (zorg dat de functie-definitie stuur_mail(..., bestand=None) is)
                     mail_inhoud = f"<p>Update over uw klacht ({k.get('ticket_id')}):</p><p>{mail_bericht}</p>"
-                    stuur_mail(k.get('email'), f"Update klacht {k.get('ticket_id')}", mail_inhoud)
-                    st.success("✅ Opgeslagen en gemaild!")
-                    st.rerun()
+                    if stuur_mail(k.get('email'), "Update klacht", mail_inhoud):
+                        st.success("✅ Opgeslagen en gemaild!")
+                        st.rerun()
 
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
