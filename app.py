@@ -37,7 +37,7 @@ st.markdown("""
     <style>
     /* Achtergrond van de hele pagina */
     .stApp { 
-        background-color: #E3F2FD; 
+        background-color: #90D5FF; 
     }
     
     /* Achtergrond van de sidebar */
