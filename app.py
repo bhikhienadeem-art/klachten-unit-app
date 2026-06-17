@@ -156,7 +156,7 @@ if st.session_state.menu == "Dashboard":
         st.info("Geen klachten gevonden in het systeem.")
 
 # --- ANDERE MENU OPTIES ---
-elif st.session_state.menu == "Rapporten":
+elif st.session_state.menu = "Rapporten":
     st.title("📈 Rapporten")
     # Jouw rapporten logica
 
