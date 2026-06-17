@@ -96,83 +96,94 @@ with st.sidebar:
         st.image("orgineel logo Centrum.png", width=250)
     except: 
         st.warning("Logo bestand niet gevonden")
+        
      # --- PAGINA LOGICA ---
-if st.session_state.logged_in:
-    # Haal data één keer op voor de hele pagina
+if st.session_state.get("logged_in", False):
+    # Data ophalen voor de hele pagina
     klachten = supabase.table("klachten").select("*").execute().data
     df_dash = pd.DataFrame(klachten) if klachten else pd.DataFrame()
 
-    # Gebruik de menu-state
-    # --- DASHBOARD VOOR MEDEWERKERS ---
-if st.session_state.menu == "Dashboard":
-    st.title("📊 Dashboard - Klachtenbeheer")
-    
-    # 1. Data ophalen
-    klachten = supabase.table("klachten").select("*").execute().data
-    
-    if klachten:
-        df_dash = pd.DataFrame(klachten)
+    # --- MENU SELECTIE ---
+    if st.session_state.menu == "Dashboard":
+        st.title("📊 Dashboard - Klachtenbeheer")
         
-        # 2. Metric Cards
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Totaal", len(df_dash))
-        c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
-        c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
+        if not df_dash.empty:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Totaal", len(df_dash))
+            c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
+            c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
+        
         st.markdown("---")
         
-        # 3. Klachten lijst
-        for k in klachten:
-            row_id = k.get('id')
-            status = k.get('status', 'Nieuw')
-            
-            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {status}"):
-                # Kolommen voor data
-                col_a, col_b = st.columns(2)
-                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                col_a.write(f"**📞 Tel:** {k.get('telefoon_whatsapp', '-')}")
-                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+        if klachten:
+            for k in klachten:
+                row_id = k.get('id')
+                status = k.get('status', 'Nieuw')
                 
-                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                
-                # Status & Notitie velden
-                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                huidige_idx = status_opties.index(status) if status in status_opties else 0
-                
-                nieuwe_status = st.selectbox("Status", status_opties, index=huidige_idx, key=f"status_{row_id}")
-                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
-                
-                # Opslaan knop
-                if st.button("💾 Opslaan", key=f"save_{row_id}"):
-                    try:
-                        supabase.table("klachten").update({
-                            "status": nieuwe_status, 
-                            "interne_notitie": notitie
-                        }).eq("id", row_id).execute()
-                        st.success("✅ Opgeslagen!")
+                with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {k.get('klachtensoort', '-')} | Status: {status}"):
+                    col_a, col_b = st.columns(2)
+                    col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
+                    col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                    col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                    st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                    st.markdown("---")
+                    
+                    # Status & Notitie
+                    status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                    huidige_idx = status_opties.index(status) if status in status_opties else 0
+                    nieuwe_status = st.selectbox("Status", status_opties, index=huidige_idx, key=f"status_{row_id}")
+                    notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
+                    
+                    # Acties
+                    if st.button("💾 Opslaan & Burger informeren", key=f"save_{row_id}"):
+                        supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
+                        mail_body = f"<p>Beste {k.get('volledige_naam')}, uw klacht ({k.get('ticket_id')}) heeft een update naar: <b>{nieuwe_status}</b>.</p>"
+                        stuur_mail(k.get('email'), "Statuswijziging klacht", mail_body)
+                        st.success("✅ Opgeslagen en gemaild!")
                         st.rerun()
-                    except Exception as e:
-                        st.error(f"Fout: {e}")
-    else:
-        st.info("Geen klachten gevonden in het systeem.")
 
-# --- ANDERE MENU OPTIES ---
-# --- MENU LOGICA (Vervang je huidige menu-blokken door dit) ---
+                    # Directe reactie
+                    st.markdown("### ✉️ Direct reageren")
+                    mail_bericht = st.text_area("Bericht", key=f"msg_{row_id}")
+                    if st.button("🚀 Verstuur & 'In behandeling'", key=f"send_{row_id}"):
+                        if mail_bericht:
+                            stuur_mail(k.get('email'), "Reactie op uw klacht", mail_bericht)
+                            supabase.table("klachten").update({"status": "In behandeling", "interne_notitie": notitie}).eq("id", row_id).execute()
+                            st.success("✅ Mail verzonden!")
+                            st.rerun()
+        else:
+            st.info("Geen klachten gevonden.")
+
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
-            # Download knop
             csv = df_dash.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download CSV", data=csv, file_name='klachten.csv', mime='text/csv')
-            
-            # Grafiek en Dataframe
             st.plotly_chart(px.pie(df_dash, names='klachtensoort'))
             st.dataframe(df_dash)
         else:
-            st.info("Geen data beschikbaar voor rapportages.")
+            st.info("Geen data beschikbaar.")
 
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
+        # Nieuwe medewerker
+        with st.expander("➕ Nieuwe medewerker toevoegen"):
+            with st.form("add_user_form", clear_on_submit=True):
+                u = st.text_input("Gebruikersnaam")
+                p = st.text_input("Wachtwoord", type="password")
+                r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
+                if st.form_submit_button("Opslaan"):
+                    supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
+                    st.rerun()
         
+        # Medewerkers lijst
+        medewerkers = supabase.table("medewerkers").select("*").execute().data
+        if medewerkers:
+            st.table(pd.DataFrame(medewerkers)[['gebruikersnaam', 'rol']])
+            te_verwijderen = st.selectbox("Gebruiker verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
+            if st.button("🗑️ Verwijder", type="primary"):
+                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
+                st.rerun()        
         # --- Nieuwe medewerker toevoegen ---
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form", clear_on_submit=True):
