@@ -129,7 +129,28 @@ else:
             supabase.table("klachten").insert({"volledige_naam": naam, "email": email, "id_nummer": id_nr, "telefoon_whatsapp": telefoon, "adres": adres, "omschrijving": omschrijving, "klachtensoort": soort, "status": "Nieuw", "ticket_id": t_id}).execute()
             
             # 3. Mailen
-            bevestiging_mail = f"<html><body><h2>Bevestiging</h2><p>Beste {naam}, uw klacht <strong>{t_id}</strong> is ontvangen.</p></body></html>"
+            bevestiging_mail = f"""
+<html>
+    <body style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #003366;">Bevestiging van uw melding</h2>
+        <p>Beste {naam},</p>
+        <p>Hartelijk dank voor uw bericht aan de <strong>Klachtenunit van het Commissariaat Wanica Centrum</strong>. Wij waarderen het zeer dat u de tijd heeft genomen om ons op de hoogte te stellen van deze situatie.</p>
+        
+        <p>Wij hebben uw klacht in goede orde ontvangen en geregistreerd onder het volgende referentienummer:</p>
+        <div style="background-color: #f0f7ff; padding: 15px; border-left: 5px solid #003366; border-radius: 5px;">
+            <p style="margin: 0; font-size: 18px;"><strong>Referentienummer: {t_id}</strong></p>
+        </div>
+        
+        <p>Ons team zal uw melding zorgvuldig beoordelen en in behandeling nemen. Wij streven ernaar om u binnen een redelijke termijn te informeren over de vervolgstappen of de status van uw klacht.</p>
+        
+        <p>Mocht u in de tussentijd nog aanvullende vragen of informatie hebben, dan kunt u altijd contact met ons opnemen onder vermelding van uw referentienummer.</p>
+        
+        <p>Met vriendelijke groet,<br>
+        <strong>Het team van Klachtenunit Wanica Centrum</strong><br>
+        📍 Tawajarieweg 20</p>
+    </body>
+</html>
+"""
             stuur_mail(email, f"Bevestiging klacht {t_id}", bevestiging_mail)
             medewerker_mail = f"<html><body><h2>Nieuwe klacht: {t_id}</h2><p>Naam: {naam}<br>Adres: {adres}<br>Omschrijving: {omschrijving}</p></body></html>"
             stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {t_id}", medewerker_mail, bestand=file)
