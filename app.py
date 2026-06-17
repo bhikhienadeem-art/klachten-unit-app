@@ -135,24 +135,33 @@ if st.session_state.logged_in:
 
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
+        
         if not df_dash.empty:
+            # 1. Tel het aantal klachten per soort
+            df_plot = df_dash['klachtensoort'].value_counts().reset_index()
+            df_plot.columns = ['Soort', 'Aantal']
+            
+            # 2. Maak de staafdiagram (Bar Chart)
+            fig = px.bar(
+                df_plot, 
+                x='Soort', 
+                y='Aantal', 
+                color='Soort', # Dit zorgt voor de verschillende kleuren
+                title="Aantal klachten per soort",
+                labels={'Aantal': 'Aantal klachten', 'Soort': 'Soort klacht'}
+            )
+            
+            # Pas de layout aan voor betere leesbaarheid
+            fig.update_layout(showlegend=False)
+            
+            # 3. Toon de grafiek in Streamlit
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Optioneel: Download knop en tabel eronder
             st.download_button("📥 Download CSV", data=df_dash.to_csv(index=False), file_name='klachten.csv')
-            st.plotly_chart(px.pie(df_dash, names='klachtensoort'))
             st.dataframe(df_dash)
-
-    elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen - Gebruikersbeheer")
-        with st.expander("➕ Nieuwe medewerker toevoegen"):
-            with st.form("add_new_employee_form", clear_on_submit=True):
-                u = st.text_input("Gebruikersnaam")
-                p = st.text_input("Wachtwoord", type="password")
-                r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
-                if st.form_submit_button("Opslaan"):
-                    if u and p:
-                        supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
-                        st.success(f"✅ Medewerker {u} is toegevoegd!")
-                        st.rerun()
-                    else: st.error("⚠️ Vul gegevens in.")
+        else:
+            st.info("Nog geen klachten om te tonen.")
 
 else:
     with st.form("klacht_form", clear_on_submit=True):
