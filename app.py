@@ -85,27 +85,37 @@ if st.session_state.logged_in:
                 supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p}).execute()
                 st.rerun()
     else:
-    # --- VOLLEDIG KLACHT FORMULIER ---
+   # --- VOLLEDIG KLACHT FORMULIER ---
+st.subheader("📝 Klacht indienen")
+
+# Gebruik een unieke key voor de formulier-container
+with st.form("klacht_form_unique", clear_on_submit=True):
+    col1, col2 = st.columns(2)
     
-    st.subheader("📝 Klacht indienen")
- 
-        naam = col1.text_input("👤 Volledige Naam")
-        id_nr = col1.text_input("🆔 ID Nummer")
-        telefoon = col1.text_input("📞 Telefoon/Whatsapp Nummer")
-        woonadres = col1.text_input("🏠 Woonadres")
-        
-        email = col2.text_input("📧 E-mail")
-        soort = col2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        
-        omschrijving = st.text_area("📝 Omschrijving van uw klacht")
-        file = st.file_uploader("📎 Bijlage (Foto of Document uploaden)")
-        
-        if st.form_submit_button("Klacht Indienen 🚀"):
-            if naam and omschrijving:
-                # Ticket ID aanmaken
-                t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
-                
-                # Opslaan in database
+    naam = col1.text_input("👤 Volledige Naam")
+    id_nr = col1.text_input("🆔 ID Nummer")
+    telefoon = col1.text_input("📞 Telefoon/Whatsapp Nummer")
+    woonadres = col1.text_input("🏠 Woonadres")
+    
+    email = col2.text_input("📧 E-mail")
+    soort = col2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+    
+    omschrijving = st.text_area("📝 Omschrijving van uw klacht")
+    
+    # Bestand uploaden (zorg dat dit binnen de 'with st.form' staat)
+    file = st.file_uploader("📎 Bijlage (Foto of Document uploaden)")
+    
+    # Submit knop
+    submit_button = st.form_submit_button("Klacht Indienen 🚀")
+    
+    if submit_button:
+        if naam and omschrijving:
+            # Ticket ID aanmaken
+            t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+            
+            # Opslaan in database
+            try:
+                # Hier versturen we de data naar Supabase
                 supabase.table("klachten").insert({
                     "volledige_naam": naam, 
                     "id_nummer": id_nr, 
@@ -118,6 +128,11 @@ if st.session_state.logged_in:
                     "klachtensoort": soort
                 }).execute()
                 
-                st.success("✅ Uw klacht is succesvol ingediend! Ticket ID: " + t_id)
-            else:
-                st.warning("⚠️ Vul minimaal uw naam en de omschrijving in.")
+                # Succesmelding
+                st.success(f"✅ Uw klacht is succesvol ingediend! Uw ticketnummer is: {t_id}")
+                st.info("Bedankt voor uw melding, wij nemen zo spoedig mogelijk contact met u op.")
+                
+            except Exception as e:
+                st.error(f"Er ging iets mis bij het verzenden: {e}")
+        else:
+            st.warning("⚠️ Vul minimaal uw naam en de omschrijving in voordat u verzendt.")
