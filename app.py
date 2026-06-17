@@ -105,11 +105,6 @@ if st.session_state.logged_in:
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
         
-        # Data ophalen
-        klachten = supabase.table("klachten").select("*").execute().data
-        df_dash = pd.DataFrame(klachten)
-        
-        # --- METRIC CARDS (Stap 5) ---
         if not df_dash.empty:
             c1, c2, c3 = st.columns(3)
             c1.metric("Totaal Klachten", len(df_dash))
@@ -117,52 +112,40 @@ if st.session_state.logged_in:
             c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
             st.markdown("---")
         
-       # --- KLACHTEN LIJST ---
+        # --- KLACHTEN LIJST ---
         for k in klachten:
             row_id = k.get('id')
             status = k.get('status', 'Nieuw')
             
-            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {k.get('klachtensoort', '-')} | Status: {status}"):
-                col_a, col_b = st.columns(2)
-                col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
-                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
-                
-                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
-                if k.get('bijlage_url'):
-                    col_b.markdown(f"**📎 Bijlage:** [Bekijk bestand]({k['bijlage_url']})")
-                
-                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                st.markdown("---")
+            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {status}"):
+                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
                 
                 status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                huidige_idx = status_opties.index(status) if status in status_opties else 0
-                
-                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{row_id}")
+                nieuwe_status = st.selectbox("Status", status_opties, index=status_opties.index(status) if status in status_opties else 0, key=f"status_{row_id}")
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
                 mail_bericht = st.text_area("Bericht naar de burger", key=f"msg_{row_id}")
 
                 if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
-                    # 1. Update de status in Supabase
+                    # Database update
                     supabase.table("klachten").update({
                         "status": nieuwe_status,
                         "interne_notitie": notitie
                     }).eq("id", row_id).execute()
                     
-                    # 2. Stel de e-mail op
-                    mail_inhoud = f"""
-                    <p>Beste {k.get('volledige_naam')},</p>
-                    <p>De status van uw klacht ({k.get('ticket_id')}) is gewijzigd naar: <b>{nieuwe_status}</b>.</p>
-                    <p>{mail_bericht}</p>
-                    <p>Met vriendelijke groet,<br>Klachtenunit Wanica</p>
-                    """
-                    
-                    # 3. Verstuur de mail
-                    if stuur_mail(k.get('email'), f"Update klacht {k.get('ticket_id')}", mail_inhoud):
-                        st.success("✅ Opgeslagen en mail succesvol verzonden!")
-                    
+                    # Mail versturen
+                    mail_inhoud = f"<p>Update over uw klacht ({k.get('ticket_id')}):</p><p>{mail_bericht}</p>"
+                    if stuur_mail(k.get('email'), "Update klacht", mail_inhoud):
+                        st.success("✅ Opgeslagen en gemaild!")
                     st.rerun()
 
+    elif st.session_state.menu == "Rapporten":
+        st.title("📈 Rapporten")
+        if not df_dash.empty:
+            st.dataframe(df_dash)
+
+    elif st.session_state.menu == "Instellingen":
+        st.title("⚙️ Instellingen")
+        # ... (jouw instellingen code blijft hieronder)
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
