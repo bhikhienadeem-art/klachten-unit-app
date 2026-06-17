@@ -100,11 +100,22 @@ if st.session_state.logged_in:
                     st.rerun()
 
     elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten")
+        st.title("📈 Rapporten & Detailoverzicht")
+        
         if not df_dash.empty:
+            # Grafieken
             c1, c2 = st.columns(2)
-            c1.plotly_chart(px.bar(df_dash['klachtensoort'].value_counts().reset_index(), x='klachtensoort', y='count'), use_container_width=True)
-            c2.plotly_chart(px.pie(df_dash, names='klachtensoort'), use_container_width=True)
+            c1.plotly_chart(px.bar(df_dash['klachtensoort'].value_counts().reset_index(), x='klachtensoort', y='count', title="Klachten per soort"), use_container_width=True)
+            c2.plotly_chart(px.pie(df_dash, names='klachtensoort', title="Verdeling klachten"), use_container_width=True)
+            
+            st.markdown("---")
+            st.subheader("📋 Volledige lijst van ingediende klachten")
+            
+            # Toon de volledige DataFrame
+            # Je kunt kolommen selecteren of hernoemen voor betere leesbaarheid
+            st.dataframe(df_dash, use_container_width=True)
+        else:
+            st.info("Nog geen klachten beschikbaar om te tonen.")
 
 else:
     with st.form("klacht_form", clear_on_submit=True):
