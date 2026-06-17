@@ -7,6 +7,7 @@ import smtplib
 from email.message import EmailMessage
 
 # --- CONFIGURATIE ---
+st.set_page_config(page_title="Klachten Unit Wanica", layout="wide", initial_sidebar_state="expanded")
 st.set_page_config(page_title="Klachten Unit Wanica", layout="wide")
 SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTE2MjgwOCwiZXhwIjoyMDk2NzM4ODA4fQ.crzk5TxZ5F27Ic_34kI7HSikAsvBgO9KfnXxGxVhFk8"
