@@ -118,29 +118,25 @@ if st.session_state.logged_in:
             st.markdown("---")
         
         # --- KLACHTEN LIJST ---
-        for k in klachten:
-            # Expander met status kleur indicatie
-            status = k.get('status', 'Nieuw')
-            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {k.get('klachtensoort', '-')} | Status: {status}"):
-                col_a, col_b = st.columns(2)
-                col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
-                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
-                
-                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
-                # Toon link naar bijlage indien aanwezig
-                if k.get('bijlage_url'):
-                    col_b.markdown(f"**📎 Bijlage:** [Bekijk bestand]({k['bijlage_url']})")
-                
-                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                
-                # Status update & Interne notitie
-                st.markdown("---")
-                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                huidige_idx = status_opties.index(status) if status in status_opties else 0
-                
-                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{k['id']}")
-                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{k['id']}")
+        # Zorg dat deze loop correct is ingesprongen
+for k in klachten:
+    row_id = k.get('id')
+    
+    with st.expander(f"Klacht van {k.get('volledige_naam')}"):
+        # Hier staan je invoervelden
+        nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling"], key=f"stat_{row_id}")
+        notitie = st.text_area("Notitie", key=f"note_{row_id}")
+
+        # De knop moet 8 spaties ingesprongen zijn als hij in de loop en expander staat
+        if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
+            # Alles wat bij de knop hoort moet 12 spaties ingesprongen zijn
+            supabase.table("klachten").update({
+                "status": nieuwe_status,
+                "interne_notitie": notitie
+            }).eq("id", row_id).execute()
+            
+            st.success("Opgeslagen!")
+            st.rerun()
                 
                if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
     # 1. Update de status in Supabase
