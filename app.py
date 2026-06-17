@@ -156,18 +156,15 @@ if st.session_state.menu == "Dashboard":
         st.info("Geen klachten gevonden in het systeem.")
 
 # --- ANDERE MENU OPTIES ---
-elif st.session_state.menu == "Rapporten":
-    st.title("📈 Rapporten")
-    # Jouw rapporten logica
-
-elif st.session_state.menu == "Instellingen":
-    st.title("⚙️ Instellingen")
-    # Jouw instellingen logica
-    elif st.session_state.menu = "Rapporten":
+# --- MENU LOGICA (Vervang je huidige menu-blokken door dit) ---
+    elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
-            st.download_button("📥 Download CSV", data=df_dash.to_csv(index=False), file_name='klachten.csv')
-            # Zorg dat plotly express (px) geïmporteerd is
+            # Download knop
+            csv = df_dash.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download CSV", data=csv, file_name='klachten.csv', mime='text/csv')
+            
+            # Grafiek en Dataframe
             st.plotly_chart(px.pie(df_dash, names='klachtensoort'))
             st.dataframe(df_dash)
         else:
@@ -176,34 +173,44 @@ elif st.session_state.menu == "Instellingen":
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
         
+        # --- Nieuwe medewerker toevoegen ---
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form", clear_on_submit=True):
                 u = st.text_input("Gebruikersnaam")
                 p = st.text_input("Wachtwoord", type="password")
                 r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
+                
                 if st.form_submit_button("Opslaan"):
                     if u and p:
-                        supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
-                        st.success(f"✅ Medewerker {u} toegevoegd!")
+                        supabase.table("medewerkers").insert({
+                            "gebruikersnaam": u, 
+                            "wachtwoord": p, 
+                            "rol": r
+                        }).execute()
+                        st.success(f"✅ Medewerker {u} is toegevoegd!")
                         st.rerun()
                     else:
-                        st.error("⚠️ Vul alle velden in.")
+                        st.error("⚠️ Vul zowel een gebruikersnaam als wachtwoord in.")
         
         st.markdown("---")
+        
+        # --- Huidige medewerkers beheer ---
         st.subheader("👥 Huidige medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
+        
         if medewerkers:
             df_users = pd.DataFrame(medewerkers)
             st.table(df_users[['gebruikersnaam', 'rol']])
             
+            st.markdown("---")
             st.warning("⚠️ Gebruikers verwijderen")
             te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
+            
             if st.button("🗑️ Verwijder deze medewerker", type="primary"):
                 supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
                 st.rerun()
         else:
             st.info("Geen medewerkers gevonden.")
-
 else:
    # --- INDIENEN KLACHT ---
     st.subheader("📝 Klacht indienen")
