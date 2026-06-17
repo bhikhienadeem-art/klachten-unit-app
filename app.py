@@ -103,30 +103,66 @@ if st.session_state.logged_in:
     df_dash = pd.DataFrame(klachten) if klachten else pd.DataFrame()
 
     # Gebruik de menu-state
-    if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard - Klachtenbeheer")
+    # --- DASHBOARD VOOR MEDEWERKERS ---
+if st.session_state.menu == "Dashboard":
+    st.title("📊 Dashboard - Klachtenbeheer")
+    
+    # 1. Data ophalen
+    klachten = supabase.table("klachten").select("*").execute().data
+    
+    if klachten:
+        df_dash = pd.DataFrame(klachten)
         
-        if not df_dash.empty:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Totaal", len(df_dash))
-            c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
-            c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
-            st.markdown("---")
+        # 2. Metric Cards
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Totaal", len(df_dash))
+        c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
+        c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
+        st.markdown("---")
+        
+        # 3. Klachten lijst
+        for k in klachten:
+            row_id = k.get('id')
+            status = k.get('status', 'Nieuw')
             
-            for k in klachten:
-                row_id = k.get('id')
-                status = k.get('status', 'Nieuw')
+            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {status}"):
+                # Kolommen voor data
+                col_a, col_b = st.columns(2)
+                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                col_a.write(f"**📞 Tel:** {k.get('telefoon_whatsapp', '-')}")
+                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
                 
-                with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {status}"):
-                    # Hier komen je details en knoppen zoals eerder besproken
-                    st.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                    # ... rest van je velden ...
-                    
-                    if st.button("💾 Opslaan", key=f"save_{row_id}"):
-                        # ... update logica ...
-                        st.success("Opgeslagen!")
-        else:
-            st.info("Geen klachten gevonden.")
+                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                
+                # Status & Notitie velden
+                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                huidige_idx = status_opties.index(status) if status in status_opties else 0
+                
+                nieuwe_status = st.selectbox("Status", status_opties, index=huidige_idx, key=f"status_{row_id}")
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
+                
+                # Opslaan knop
+                if st.button("💾 Opslaan", key=f"save_{row_id}"):
+                    try:
+                        supabase.table("klachten").update({
+                            "status": nieuwe_status, 
+                            "interne_notitie": notitie
+                        }).eq("id", row_id).execute()
+                        st.success("✅ Opgeslagen!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Fout: {e}")
+    else:
+        st.info("Geen klachten gevonden in het systeem.")
+
+# --- ANDERE MENU OPTIES ---
+elif st.session_state.menu == "Rapporten":
+    st.title("📈 Rapporten")
+    # Jouw rapporten logica
+
+elif st.session_state.menu == "Instellingen":
+    st.title("⚙️ Instellingen")
+    # Jouw instellingen logica
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
