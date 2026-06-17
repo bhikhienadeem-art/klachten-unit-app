@@ -13,8 +13,8 @@ SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTE2MjgwOCwiZXhwIjoyMDk2NzM4ODA4fQ.crzk5TxZ5F27Ic_34kI7HSikAsvBgO9KfnXxGxVhFk8"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- PROFESSIONELE MAIL FUNCTIE ---
-def stuur_mail_professioneel(ontvanger, onderwerp, html_inhoud):
+# --- MAIL FUNCTIE MET BIJLAGE ---
+def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
     try:
         msg = EmailMessage()
         msg['Subject'] = onderwerp
@@ -22,57 +22,47 @@ def stuur_mail_professioneel(ontvanger, onderwerp, html_inhoud):
         msg['To'] = ontvanger
         msg.add_alternative(html_inhoud, subtype='html')
         
+        if bestand is not None:
+            bestand.seek(0)
+            msg.add_attachment(
+                bestand.read(),
+                maintype='application',
+                subtype='octet-stream',
+                filename=bestand.name
+            )
+        
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login("klachtenunitwanicacentrum@gmail.com", "nbngichzpmlgzglc")
             smtp.send_message(msg)
         return True
     except Exception as e:
-        st.error(f"Fout bij mailverzending: {e}")
+        st.error(f"Mail fout: {e}")
         return False
 
-# --- INITIALISATIE ---
+# --- SESSIE ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
-if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
-# --- CSS ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #e3f2fd; }
-    .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border-radius: 10px; margin-bottom: 30px; }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- HEADER ---
-col_logo, col_text = st.columns([1, 4])
-with col_logo:
-    try: st.image("orgineel logo Centrum.png", width=150)
-    except: st.write("Logo niet gevonden")
-with col_text:
-    st.markdown('<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1></div>', unsafe_allow_html=True)
-
-# --- SIDEBAR ---
+# --- SIDEBAR (INLOGGEN) ---
 with st.sidebar:
     if not st.session_state.logged_in:
-        gebruiker = st.text_input("Gebruikersnaam")
-        wachtwoord = st.text_input("Wachtwoord", type="password")
+        user = st.text_input("Gebruikersnaam")
+        pw = st.text_input("Wachtwoord", type="password")
         if st.button("Inloggen"):
-            if gebruiker == "admin" and wachtwoord == "admin123":
+            # Controleer via database
+            check = supabase.table("medewerkers").select("*").eq("gebruikersnaam", user).eq("wachtwoord", pw).execute().data
+            if check:
                 st.session_state.logged_in = True
                 st.rerun()
+            else:
+                st.error("Ongeldige gegevens")
     else:
-        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
 
 # --- HOOFDPROGRAMMA ---
-if st.session_state.logged_in:
-    # (Dashboard & Logica hier laten staan zoals voorheen)
-    st.write(f"Welkom in het dashboard menu: {st.session_state.menu}")
-    # ... (Rest van de admin logica)
-
-else:
-    st.subheader("📝 Dien hier uw klacht in")
+if not st.session_state.logged_in:
+    st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         naam = col1.text_input("Volledige naam")
@@ -82,7 +72,7 @@ else:
         email = col2.text_input("E-mailadres")
         soort = col2.selectbox("Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("Omschrijving")
-        uploaded_file = st.file_uploader("Bijlage (optioneel)", type=['png', 'jpg', 'pdf'])
+        uploaded_file = st.file_uploader("Bijlage (optioneel)", type=['png', 'jpg', 'jpeg', 'pdf'])
         
         if st.form_submit_button("Verstuur Klacht"):
             ticket_nr = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
@@ -94,23 +84,28 @@ else:
                 "omschrijving": omschrijving, "status": "Nieuw", "ticket_id": ticket_nr
             }).execute()
             
-            # 1. MAIL NAAR CLIENT
-            mail_client = f"""<html><body style="font-family:sans-serif;">
-                <h2 style="color:#004a99;">Bevestiging klacht: {ticket_nr}</h2>
-                <p>Beste {naam}, hartelijk dank voor uw melding. Wij nemen deze in behandeling.</p>
+            # MAIL BURGER
+            mail_burger = f"""<html><body style="font-family:sans-serif; color:#333;">
+                <h2 style="color:#004a99;">Bevestiging van uw klacht</h2>
+                <p>Beste {naam},</p>
+                <p>Hartelijk dank voor het indienen van uw klacht bij het Commissariaat Wanica Centrum. Wij hebben uw melding (Referentie: <b>{ticket_nr}</b>) in goede orde ontvangen.</p>
+                <p>Ons team zal uw klacht zo spoedig mogelijk in behandeling nemen. Wij houden u via de e-mail op de hoogte van de voortgang.</p>
+                <p>Met vriendelijke groet,<br>Klachtenunit Wanica Centrum</p>
                 </body></html>"""
-            stuur_mail_professioneel(email, f"Bevestiging: {ticket_nr}", mail_client)
+            stuur_mail(email, f"Bevestiging klacht: {ticket_nr}", mail_burger)
             
-            # 2. MAIL NAAR MEDEWERKER
-            mail_medewerker = f"""<html><body style="font-family:sans-serif;">
-                <h2 style="color:#d32f2f;">Nieuwe Klacht: {ticket_nr}</h2>
-                <table border="1" style="border-collapse:collapse; width:100%;">
-                    <tr><td>Naam</td><td>{naam}</td></tr>
-                    <tr><td>Soort</td><td>{soort}</td></tr>
-                    <tr><td>Omschrijving</td><td>{omschrijving}</td></tr>
-                    <tr><td>Bestand</td><td>{uploaded_file.name if uploaded_file else 'Geen'}</td></tr>
+            # MAIL MEDEWERKER
+            mail_med = f"""<html><body style="font-family:sans-serif;">
+                <h2 style="color:#d32f2f;">Nieuwe klacht binnengekomen: {ticket_nr}</h2>
+                <p>Beste collega, er is een nieuwe klacht gemeld. In de bijlage vindt u eventuele bewijsstukken.</p>
+                <table border="1" cellpadding="5" style="border-collapse:collapse;">
+                    <tr><td><b>Naam:</b></td><td>{naam}</td></tr>
+                    <tr><td><b>Soort:</b></td><td>{soort}</td></tr>
+                    <tr><td><b>Omschrijving:</b></td><td>{omschrijving}</td></tr>
                 </table>
                 </body></html>"""
-            stuur_mail_professioneel("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {ticket_nr}", mail_medewerker)
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {ticket_nr}", mail_med, bestand=uploaded_file)
             
-            st.success("✅ Uw klacht is verzonden en de bevestigingsmail is onderweg!")
+            st.success("✅ Klacht succesvol verzonden!")
+else:
+    st.write("Welkom beheerder. U bent ingelogd.")
