@@ -61,18 +61,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- HEADER MET LOGO ---
-col1, col2 = st.columns([1, 4])  # 1 deel voor logo, 4 delen voor tekst
+col1, col2 = st.columns([1, 4]) 
 
 with col1:
-    # Zorg dat je logo-bestand in de map van je app staat
-    st.image("logo_bestand.png", use_container_width=True) 
+    # GEBRUIK DE EXACTE NAAM UIT JE REPOSITORY
+    st.image("orgineel logo Centrum.png", use_container_width=True) 
 
 with col2:
     st.markdown("""
         <div class="header-bar">
-            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-            📍 Tawajarieweg 20 (Lelydorp) | 📞 (+597) 366660/366929 | 
-            💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
+            <h1 style="margin: 0; color: white;">Klachtenunit Commissariaat Wanica Centrum</h1>
+            <div class="header-text">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062
+            </div>
         </div>
     """, unsafe_allow_html=True)
 # --- SIDEBAR & AUTH ---
