@@ -187,7 +187,7 @@ else:
             <div style="font-family: Arial;">
                 <h2 style="color:#004a99;">Uw melding is in goede orde ontvangen</h2>
                 <p>Beste {naam},</p>
-                <p>Hartelijk dank voor het indienen van uw klacht bij het Commissariaat Wanica Centrum. Wij vinden het belangrijk dat uw woonomgeving in orde is.</p>
+                <p>Hartelijk dank voor het indienen van uw klacht bij het Commissariaat Wanica Centrum.</p>
                 <p>Uw melding (Referentie: <b>{t_id}</b>) is in behandeling genomen door ons team. Wij houden u via de e-mail op de hoogte van de voortgang.</p>
                 <p>Met vriendelijke groet,<br><b>Klachtenunit Wanica Centrum</b></p>
             </div>"""
