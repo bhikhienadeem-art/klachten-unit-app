@@ -52,25 +52,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-col_logo, col_text = st.columns([1, 4]) 
-with col_logo: 
-    st.image("orgineel logo Centrum.png", width=150)
-with col_text: 
-    st.markdown("""
-        <div class="header-bar">
-            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-            <div style="font-size: 0.9em;">
-                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
-            </div>
+# Logo is nu weg uit de header, we gebruiken alleen de tekst-kolom
+st.markdown("""
+    <div class="header-bar">
+        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+        <div style="font-size: 0.9em;">
+            📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
         </div>
-    """, unsafe_allow_html=True)
+    </div>
+""", unsafe_allow_html=True)
 
 # --- SESSIE & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
 with st.sidebar:
-    st.markdown("## Medewerkers Login") # Tekst toegevoegd
+    st.markdown("## Medewerkers Login")
     if not st.session_state.logged_in:
         user = st.text_input("Gebruikersnaam")
         pw = st.text_input("Wachtwoord", type="password")
@@ -85,7 +82,13 @@ with st.sidebar:
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
-# --- PAGINA LOGICA ---
+    
+    # Logo nu onderaan de sidebar
+    st.markdown("---")
+    try: 
+        st.image("orgineel logo Centrum.png", width=150)
+    except: 
+        st.warning("Logo bestand ontbreekt")# --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     klachten = supabase.table("klachten").select("*").execute().data
     df_dash = pd.DataFrame(klachten)
