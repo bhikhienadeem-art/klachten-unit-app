@@ -13,7 +13,7 @@ SUPABASE_URL = "https://hyxfprmtdqgocrgmvoyc.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGZwcm10ZHFnb2NyZ212b3ljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTE2MjgwOCwiZXhwIjoyMDk2NzM4ODA4fQ.crzk5TxZ5F27Ic_34kI7HSikAsvBgO9KfnXxGxVhFk8"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- MAIL FUNCTIE MET BIJLAGE ---
+# --- MAIL FUNCTIE ---
 def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
     try:
         msg = EmailMessage()
@@ -24,12 +24,7 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         
         if bestand is not None:
             bestand.seek(0)
-            msg.add_attachment(
-                bestand.read(),
-                maintype='application',
-                subtype='octet-stream',
-                filename=bestand.name
-            )
+            msg.add_attachment(bestand.read(), maintype='application', subtype='octet-stream', filename=bestand.name)
         
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login("klachtenunitwanicacentrum@gmail.com", "nbngichzpmlgzglc")
@@ -39,16 +34,38 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         st.error(f"Mail fout: {e}")
         return False
 
+# --- CSS ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #e3f2fd; }
+    .header-bar { background-color: #004a99; color: white; padding: 25px; text-align: center; border: 5px solid #ffcc00; border-radius: 10px; margin-bottom: 30px; }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- HEADER ---
+col_logo, col_text = st.columns([1, 4]) 
+with col_logo:
+    try: st.image("orgineel logo Centrum.png", width=150)
+    except: st.warning("Logo bestand ontbreekt")
+with col_text:
+    st.markdown("""
+        <div class="header-bar">
+            <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
+            <div style="font-size: 0.9em; margin-top: 15px;">
+                📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
 # --- SESSIE ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 
-# --- SIDEBAR (INLOGGEN) ---
+# --- SIDEBAR ---
 with st.sidebar:
     if not st.session_state.logged_in:
         user = st.text_input("Gebruikersnaam")
         pw = st.text_input("Wachtwoord", type="password")
         if st.button("Inloggen"):
-            # Controleer via database
             check = supabase.table("medewerkers").select("*").eq("gebruikersnaam", user).eq("wachtwoord", pw).execute().data
             if check:
                 st.session_state.logged_in = True
@@ -60,7 +77,7 @@ with st.sidebar:
             st.session_state.logged_in = False
             st.rerun()
 
-# --- HOOFDPROGRAMMA ---
+# --- CONTENT ---
 if not st.session_state.logged_in:
     st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
@@ -77,7 +94,6 @@ if not st.session_state.logged_in:
         if st.form_submit_button("Verstuur Klacht"):
             ticket_nr = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
             
-            # Database
             supabase.table("klachten").insert({
                 "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
                 "adres": woonadres, "email": email, "klachtensoort": soort,
@@ -97,7 +113,6 @@ if not st.session_state.logged_in:
             # MAIL MEDEWERKER
             mail_med = f"""<html><body style="font-family:sans-serif;">
                 <h2 style="color:#d32f2f;">Nieuwe klacht binnengekomen: {ticket_nr}</h2>
-                <p>Beste collega, er is een nieuwe klacht gemeld. In de bijlage vindt u eventuele bewijsstukken.</p>
                 <table border="1" cellpadding="5" style="border-collapse:collapse;">
                     <tr><td><b>Naam:</b></td><td>{naam}</td></tr>
                     <tr><td><b>Soort:</b></td><td>{soort}</td></tr>
@@ -108,4 +123,4 @@ if not st.session_state.logged_in:
             
             st.success("✅ Klacht succesvol verzonden!")
 else:
-    st.write("Welkom beheerder. U bent ingelogd.")
+    st.write("Welkom beheerder. U bent succesvol ingelogd.")
