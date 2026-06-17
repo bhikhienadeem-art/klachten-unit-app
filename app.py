@@ -158,6 +158,7 @@ if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
         st.success("✅ Opgeslagen en mail succesvol verzonden!")
     
     st.rerun()
+    
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
