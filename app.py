@@ -89,9 +89,16 @@ if st.session_state.logged_in:
                 if col2.button("🗑️ Verwijderen", key=f"del_{row_id}"):
                     supabase.table("klachten").delete().eq("id", row_id).execute(); st.rerun()
 
-    elif st.session_state.menu == "📈 Rapporten":
+     elif st.session_state.menu == "📈 Rapporten":
         st.title("📈 Rapporten & Detailoverzicht")
-        # ... (jouw code voor rapporten)
+        if not df_dash.empty:
+            c1, c2 = st.columns(2)
+            c1.plotly_chart(px.bar(df_dash['klachtensoort'].value_counts().reset_index(), x='klachtensoort', y='count'), use_container_width=True)
+            c2.plotly_chart(px.pie(df_dash, names='klachtensoort'), use_container_width=True)
+            st.dataframe(df_dash, use_container_width=True)
+            csv = df_dash.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download CSV", csv, "klachten.csv", "text/csv")
+
 
     elif st.session_state.menu == "⚙️ Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
