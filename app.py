@@ -14,19 +14,26 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- MAIL FUNCTIE ---
-def stuur_mail(ontvanger, onderwerp, html_inhoud):
+def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
     try:
         msg = EmailMessage()
         msg['Subject'] = onderwerp
         msg['From'] = "Klachtenunit Wanica <klachtenunitwanicacentrum@gmail.com>"
         msg['To'] = ontvanger
-        # BCC toevoegen aan jezelf zodat de mail in je eigen Inbox/Verzonden map verschijnt
         msg['Bcc'] = "klachtenunitwanicacentrum@gmail.com" 
         msg.add_alternative(html_inhoud, subtype='html')
         
+        # Logica voor bijlage toevoegen
+        if bestand:
+            msg.add_attachment(
+                bestand.getvalue(),
+                maintype='application',
+                subtype='octet-stream',
+                filename=bestand.name
+            )
+            
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login("klachtenunitwanicacentrum@gmail.com", "nbngichzpmlgzglc")
-            # Verstuur naar ontvanger EN de BCC
             smtp.send_message(msg)
         return True
     except Exception as e:
@@ -36,33 +43,13 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud):
 # --- CSS & HEADER ---
 st.markdown("""
     <style>
-    /* Verberg de Streamlit menu-balk (witte balk) */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* Achtergrondkleur voor de gehele app en sidebar */
-    .stApp, [data-testid="stSidebar"] { 
-        background-color: #90D5FF; 
-    }
-    /* Grotere Header styling */
-    .header-bar { 
-        background-color: #003366; 
-        color: white; 
-        padding: 40px; 
-        text-align: center; 
-        border: 5px solid #ffcc00; 
-        border-radius: 15px; 
-        margin-bottom: 30px; 
-    }
-    .header-bar h1 {
-        font-size: 3em; 
-        margin-bottom: 10px;
-    }
+    #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
+    .stApp, [data-testid="stSidebar"] { background-color: #90D5FF; }
+    .header-bar { background-color: #003366; color: white; padding: 40px; text-align: center; border: 5px solid #ffcc00; border-radius: 15px; margin-bottom: 30px; }
+    .header-bar h1 { font-size: 3em; margin-bottom: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
-# De header container
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
@@ -71,6 +58,7 @@ st.markdown("""
         </div>
     </div>
 """, unsafe_allow_html=True)
+
 # --- SESSIE & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
@@ -91,20 +79,17 @@ with st.sidebar:
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
-    # Logo onderaan de sidebar (groter formaat)
     st.markdown("---")
-    try: 
-        st.image("orgineel logo Centrum.png", width=250)
-    except: 
-        st.warning("Logo bestand niet gevonden")
-        # --- PAGINA LOGICA ---
+    try: st.image("orgineel logo Centrum.png", width=250)
+    except: st.warning("Logo bestand niet gevonden")
+
+# --- PAGINA LOGICA ---
 if st.session_state.logged_in:
     klachten = supabase.table("klachten").select("*").execute().data
     df_dash = pd.DataFrame(klachten)
 
     if st.session_state.menu == "Dashboard":
         st.title("📊 Dashboard - Klachtenbeheer")
-        
         if not df_dash.empty:
             c1, c2, c3 = st.columns(3)
             c1.metric("Totaal Klachten", len(df_dash))
@@ -112,40 +97,22 @@ if st.session_state.logged_in:
             c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
             st.markdown("---")
         
-        # --- KLACHTEN LIJST ---
         for k in klachten:
             row_id = k.get('id')
             status = k.get('status', 'Nieuw')
-            
             with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {status}"):
-                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                
                 status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                nieuwe_status = st.selectbox("Status", status_opties, index=status_opties.index(status) if status in status_opties else 0, key=f"status_{row_id}")
+                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=status_opties.index(status) if status in status_opties else 0, key=f"status_{row_id}")
                 notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
                 mail_bericht = st.text_area("Bericht naar de burger", key=f"msg_{row_id}")
 
                 if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
-                    # Database update
-                    supabase.table("klachten").update({
-                        "status": nieuwe_status,
-                        "interne_notitie": notitie
-                    }).eq("id", row_id).execute()
-                    
-                    # Mail versturen
+                    supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
                     mail_inhoud = f"<p>Update over uw klacht ({k.get('ticket_id')}):</p><p>{mail_bericht}</p>"
-                    if stuur_mail(k.get('email'), "Update klacht", mail_inhoud):
-                        st.success("✅ Opgeslagen en gemaild!")
+                    stuur_mail(k.get('email'), f"Update klacht {k.get('ticket_id')}", mail_inhoud)
+                    st.success("✅ Opgeslagen en gemaild!")
                     st.rerun()
 
-    elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten")
-        if not df_dash.empty:
-            st.dataframe(df_dash)
-
-    elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen")
-        # ... (jouw instellingen code blijft hieronder)
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
@@ -155,50 +122,19 @@ if st.session_state.logged_in:
 
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
-        
         with st.expander("➕ Nieuwe medewerker toevoegen"):
-            # Unieke key voor dit formulier
             with st.form("add_new_employee_form", clear_on_submit=True):
                 u = st.text_input("Gebruikersnaam")
                 p = st.text_input("Wachtwoord", type="password")
                 r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
-                
                 if st.form_submit_button("Opslaan"):
                     if u and p:
-                        supabase.table("medewerkers").insert({
-                            "gebruikersnaam": u, 
-                            "wachtwoord": p, 
-                            "rol": r
-                        }).execute()
+                        supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
                         st.success(f"✅ Medewerker {u} is toegevoegd!")
                         st.rerun()
-                    else:
-                        st.error("⚠️ Vul zowel een gebruikersnaam als wachtwoord in.")
-        
-        st.markdown("---")
-        
-        # --- Huidige medewerkers beheer ---
-        st.subheader("👥 Huidige medewerkers")
-        medewerkers = supabase.table("medewerkers").select("*").execute().data
-        
-        if medewerkers:
-            df_users = pd.DataFrame(medewerkers)
-            # Toon alleen relevante kolommen
-            st.table(df_users[['gebruikersnaam', 'rol']])
-            
-            st.markdown("---")
-            st.warning("⚠️ Gebruikers verwijderen")
-            te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
-            
-            if st.button("🗑️ Verwijder deze medewerker", type="primary"):
-                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
-                st.rerun()
-        else:
-            st.info("Geen medewerkers gevonden.")
-
+                    else: st.error("⚠️ Vul gegevens in.")
 
 else:
-    # --- INDIENEN KLACHT ---
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         naam = col1.text_input("Naam")
@@ -212,38 +148,7 @@ else:
         
         if st.form_submit_button("Verstuur Klacht"):
             t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
-            supabase.table("klachten").insert({
-                "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
-                "adres": woonadres, "email": email, "omschrijving": omschrijving,
-                "status": "Nieuw", "ticket_id": t_id, "klachtensoort": soort
-            }).execute()
-            
-            # VRIENDELIJKE MAIL VOOR CLIENT
-            html_client = f"""
-            <div style="font-family: Arial;">
-                <h2 style="color:#004a99;">Uw melding is in goede orde ontvangen</h2>
-                <p>Beste {naam},</p>
-                <p>Hartelijk dank voor het indienen van uw klacht bij het Commissariaat Wanica Centrum.</p>
-                <p>Uw melding (Referentie: <b>{t_id}</b>) is in behandeling genomen door ons team. Wij houden u via de e-mail op de hoogte van de voortgang.</p>
-                <p>Met vriendelijke groet,<br><b>Klachtenunit Wanica Centrum</b></p>
-            </div>"""
-            stuur_mail(email, "Bevestiging van uw klacht", html_client)
-            
-            # GEDETAILLEERDE MAIL VOOR MEDEWERKER
-            html_med = f"""
-            <div style="font-family: Arial;">
-                <h2 style="color:#d32f2f;">Nieuwe klacht gemeld: {t_id}</h2>
-                <p>Er is zojuist een nieuwe klacht binnengekomen via het portaal. Hieronder staan de details:</p>
-                <table border="1" cellpadding="10" style="border-collapse:collapse; width:100%;">
-                    <tr><td><b>Naam:</b></td><td>{naam}</td></tr>
-                    <tr><td><b>ID Nummer:</b></td><td>{id_nr}</td></tr>
-                    <tr><td><b>Telefoon:</b></td><td>{telefoon}</td></tr>
-                    <tr><td><b>Adres:</b></td><td>{woonadres}</td></tr>
-                    <tr><td><b>Soort klacht:</b></td><td>{soort}</td></tr>
-                    <tr><td><b>Omschrijving:</b></td><td>{omschrijving}</td></tr>
-                </table>
-                <p>Eventuele bewijsstukken vindt u in de bijlage van deze e-mail.</p>
-            </div>"""
-            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {t_id}", html_med, bestand=file)
-            
-            st.success("✅ Uw klacht is verzonden. Bedankt voor uw melding!")
+            supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon, "adres": woonadres, "email": email, "omschrijving": omschrijving, "status": "Nieuw", "ticket_id": t_id, "klachtensoort": soort}).execute()
+            stuur_mail(email, "Bevestiging van uw klacht", "Bedankt voor uw melding.")
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {t_id}", "Er is een nieuwe melding.", bestand=file)
+            st.success("✅ Uw klacht is verzonden!")
