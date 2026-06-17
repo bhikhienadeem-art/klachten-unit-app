@@ -208,16 +208,16 @@ else:
         # Invoervelden met icoontjes
         naam = col1.text_input("👤 Naam")
         id_nr = col1.text_input("🆔 ID Nummer")
-        telefoon = col1.text_input("📞 Telefoon")
+        telefoon = col1.text_input("📞 Telefoon/Whatsapp Nummer")
         woonadres = col1.text_input("🏠 Woonadres")
         
         email = col2.text_input("📧 E-mail")
         soort = col2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         
-        omschrijving = st.text_area("📝 Omschrijving")
+        omschrijving = st.text_area("📝 Omschrijving van uw klacht")
         file = st.file_uploader("📎 Bijlage (max 200MB)")
         
-        if st.form_submit_button("Verstuur Klacht 🚀"):
+        if st.form_submit_button("Klacht Indienen 🚀"):
             t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
             
             # Database insert
