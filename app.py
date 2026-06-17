@@ -168,6 +168,7 @@ else:
         naam = col1.text_input("Naam")
         id_nr = col1.text_input("ID Nummer")
         telefoon = col1.text_input("Telefoon")
+        woonadres = col1.text_input("Woonadres") # Woonadres toegevoegd
         email = col2.text_input("E-mail")
         soort = col2.selectbox("Soort", ["Afval", "Wegen", "Wateroverlast", "Anders"])
         omschrijving = st.text_area("Omschrijving")
@@ -175,9 +176,18 @@ else:
         
         if st.form_submit_button("Verstuur Klacht"):
             t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
-            supabase.table("klachten").insert({"volledige_naam": naam, "id_nummer": id_nr, "email": email, "omschrijving": omschrijving, "status": "Nieuw", "ticket_id": t_id, "klachtensoort": soort}).execute()
+            supabase.table("klachten").insert({
+                "volledige_naam": naam, 
+                "id_nummer": id_nr, 
+                "telefoon_whatsapp": telefoon, 
+                "adres": woonadres, # Woonadres in database
+                "email": email, 
+                "omschrijving": omschrijving, 
+                "status": "Nieuw", 
+                "ticket_id": t_id, 
+                "klachtensoort": soort
+            }).execute()
             
-            # Mails (zoals eerder besproken)
             stuur_mail(email, "Bevestiging", f"Beste {naam}, uw melding {t_id} is ontvangen.")
             stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht {t_id}", "Check dashboard", bestand=file)
             st.success("Verzonden!")
