@@ -34,16 +34,22 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
 # --- CSS & ACHTERGROND ---
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
+    /* MainMenu en footer mag je hidden laten als je dat wilt */
+    #MainMenu {visibility: hidden;} 
+    footer {visibility: hidden;}
+    
+    /* HAAL 'header {visibility: hidden;}' WEG OF ZET HET OP VISIBLE */
+    header {visibility: visible;} 
+    
     .stApp { background-color: #90D5FF; }
     [data-testid="stSidebar"] { background-color: #90D5FF; }
+    
     .header-bar { 
         background-color: #003366; color: white; padding: 30px; text-align: center; 
         border: 5px solid #ffcc00; border-radius: 15px; margin-bottom: 20px; 
     }
     </style>
 """, unsafe_allow_html=True)
-
 st.markdown("""<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1>📍 Tawajarieweg 20 (Lelydorp) | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
 
 # --- SIDEBAR & AUTH ---
