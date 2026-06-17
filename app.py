@@ -113,42 +113,80 @@ if st.session_state.logged_in:
             c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
             st.markdown("---")
         
-        # --- KLACHTEN LIJST ---
-        if klachten:
-            for k in klachten:
-                row_id = k.get('id')
-                status = k.get('status', 'Nieuw')
-                
-                with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {k.get('klachtensoort', '-')} | Status: {status}"):
-                    col_a, col_b = st.columns(2)
-                    col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
-                    col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
-                    col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
-                    col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+      # --- KLACHTEN LIJST ---
+if klachten:
+    for k in klachten:
+        row_id = k.get('id')
+        status = k.get('status', 'Nieuw')
+        
+        with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {k.get('klachtensoort', '-')} | Status: {status}"):
+            col_a, col_b = st.columns(2)
+            col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
+            col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+            col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
+            col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+            
+            if k.get('bijlage_url'):
+                col_b.markdown(f"**📎 Bijlage:** [Bekijk bestand]({k['bijlage_url']})")
+            
+            st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+            st.markdown("---")
+            
+            # --- STATUS & NOTITIE ---
+            status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+            huidige_idx = status_opties.index(status) if status in status_opties else 0
+            
+            nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{row_id}")
+            notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
+            
+            # Knop voor alleen opslaan (status wijziging met automatische mail)
+            if st.button("💾 Opslaan & Burger informeren", key=f"save_{row_id}"):
+                try:
+                    supabase.table("klachten").update({
+                        "status": nieuwe_status, 
+                        "interne_notitie": notitie
+                    }).eq("id", row_id).execute()
                     
-                    if k.get('bijlage_url'):
-                        col_b.markdown(f"**📎 Bijlage:** [Bekijk bestand]({k['bijlage_url']})")
+                    # Stuur mail naar burger bij statuswijziging
+                    mail_body = f"<p>Beste {k.get('volledige_naam')}, de status van uw klacht ({k.get('ticket_id')}) is gewijzigd naar: <b>{nieuwe_status}</b>.</p>"
+                    stuur_mail(k.get('email'), "Statuswijziging van uw klacht", mail_body)
                     
-                    st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                    st.markdown("---")
-                    
-                    status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                    huidige_idx = status_opties.index(status) if status in status_opties else 0
-                    
-                    nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{row_id}")
-                    notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
-                    
-                    if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
-                        try:
-                            supabase.table("klachten").update({
-                                "status": nieuwe_status, 
-                                "interne_notitie": notitie
-                            }).eq("id", row_id).execute()
-                            st.success("✅ Opgeslagen!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Fout bij opslaan: {e}")
-        else:
+                    st.success("✅ Opgeslagen en burger geïnformeerd!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Fout: {e}")
+
+            st.markdown("---")
+            
+            # --- DIRECT E-MAILEN (Custom bericht) ---
+            st.subheader("✉️ Directe reactie naar burger")
+            mail_onderwerp = st.text_input(f"Onderwerp", value=f"Update over uw klacht: {k.get('ticket_id')}", key=f"sub_{row_id}")
+            mail_bericht = st.text_area(f"Bericht voor {k.get('volledige_naam')}", key=f"msg_{row_id}")
+            
+            if st.button("🚀 Verstuur e-mail & zet op 'In behandeling'", key=f"send_{row_id}"):
+                if mail_bericht:
+                    try:
+                        html_mail = f"""
+                        <div style="font-family: Arial;">
+                            <h2 style="color:#004a99;">Update over uw klacht</h2>
+                            <p>Beste {k.get('volledige_naam')},</p>
+                            <p>{mail_bericht.replace(chr(10), '<br>')}</p>
+                            <p>Met vriendelijke groet,<br><b>Klachtenunit Wanica Centrum</b></p>
+                        </div>"""
+                        
+                        stuur_mail(k.get('email'), mail_onderwerp, html_mail)
+                        
+                        supabase.table("klachten").update({
+                            "status": "In behandeling", 
+                            "interne_notitie": notitie
+                        }).eq("id", row_id).execute()
+                        
+                        st.success("✅ Mail verzonden en status naar 'In behandeling'!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Fout: {e}")
+                else:
+                    st.warning("⚠️ Schrijf eerst een bericht.")        else:
             st.info("Geen klachten gevonden in het systeem.")
 
     elif st.session_state.menu == "Rapporten":
