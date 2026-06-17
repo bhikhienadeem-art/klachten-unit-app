@@ -140,13 +140,13 @@ else:
     with st.form("klacht_form", clear_on_submit=True):
         st.subheader("📝 Klacht Indienen")
         c1, c2 = st.columns(2)
-        naam = c1.text_input("👤 Naam")
+        naam = c1.text_input("👤 Volledige Naam")
         email = c2.text_input("📧 E-mail")
         id_nr = c1.text_input("🆔 ID Nummer")
         soort = c2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        telefoon = c1.text_input("📞 Telefoon")
+        telefoon = c1.text_input("📞 Telefoon/Whatsapp Nummer")
         adres = c2.text_input("🏠 Woonadres")
-        omschrijving = st.text_area("✍️ Omschrijving")
+        omschrijving = st.text_area("✍️ Omschrijving/Eventueel Oplossings Voorstel")
         file = st.file_uploader("📎 Bijlage")
         if st.form_submit_button("🚀 Verstuur Klacht"):
             t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
