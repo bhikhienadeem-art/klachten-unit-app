@@ -31,41 +31,57 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         st.error(f"Mail fout: {e}")
         return False
 
-# --- CSS & ACHTERGROND ---
+import streamlit as st
+
+# --- CSS ---
 st.markdown("""
     <style>
-    /* MainMenu en footer verbergen */
+    /* UI Elementen verbergen */
     #MainMenu {visibility: hidden;} 
     footer {visibility: hidden;}
-    
-    /* Header zichtbaar voor navigatie/sidebar */
     header {visibility: visible;} 
     
+    /* Achtergrond kleuren */
     .stApp { background-color: #90D5FF; }
     [data-testid="stSidebar"] { background-color: #90D5FF; }
     
+    /* Header balk styling */
     .header-bar { 
         background-color: #003366; 
         color: white; 
-        padding: 30px; 
-        text-align: center; 
-        border: 5px solid #ffcc00; 
-        border-radius: 15px; 
-        margin-bottom: 20px; 
+        padding: 15px; 
+        border: 3px solid #ffcc00; 
+        border-radius: 10px; 
+        text-align: center;
     }
-
+    
     /* Mobiele optimalisatie */
     @media (max-width: 600px) {
-        .header-bar { 
-            padding: 10px; 
-            font-size: 14px; 
-        }
-        .header-bar h1 { 
-            font-size: 18px; 
-        }
+        .header-bar { padding: 8px; }
+        .header-bar h1 { font-size: 16px !important; }
+        .header-text { font-size: 10px !important; }
     }
     </style>
 """, unsafe_allow_html=True)
+
+# --- HEADER MET LOGO'S EN TEKST ---
+col1, col2, col3 = st.columns([1, 5, 1])
+
+with col1:
+    # Zorg dat de naam in je repo exact 'orgineel logo Centrum.png' is
+    st.image("orgineel logo Centrum.png", use_container_width=True)
+
+with col2:
+    st.markdown("""
+        <div class="header-bar">
+            <h1 style="margin: 0; font-size: 24px; color: white;">Klachtenunit Commissariaat Wanica Centrum</h1>
+            <p class="header-text" style="margin: 5px 0 0 0;">Kontact informa:t 088-733-17000 | E-mail: lmcunifo@klwanica.gc.su</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    # Zorg dat de naam in je repo exact 'pngegg (1).png' is
+    st.image("pngegg (1).png", use_container_width=True)
 st.markdown("""<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1>📍 Tawajarieweg 20 (Lelydorp) | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
 
 # --- SIDEBAR & AUTH ---
