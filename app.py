@@ -89,7 +89,7 @@ if st.session_state.logged_in:
                 if col2.button("🗑️ Verwijderen", key=f"del_{row_id}"):
                     supabase.table("klachten").delete().eq("id", row_id).execute(); st.rerun()
 
-     elif st.session_state.menu == "📈 Rapporten":
+  elif st.session_state.menu == "📈 Rapporten":
         st.title("📈 Rapporten & Detailoverzicht")
         if not df_dash.empty:
             c1, c2 = st.columns(2)
