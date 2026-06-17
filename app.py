@@ -117,48 +117,52 @@ if st.session_state.logged_in:
             c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
             st.markdown("---")
         
-        # --- KLACHTEN LIJST ---
-        # Zorg dat deze loop correct is ingesprongen
-for k in klachten:
-    row_id = k.get('id')
-    
-    with st.expander(f"Klacht van {k.get('volledige_naam')}"):
-        # Hier staan je invoervelden
-        nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling"], key=f"stat_{row_id}")
-        notitie = st.text_area("Notitie", key=f"note_{row_id}")
+       # --- KLACHTEN LIJST ---
+        for k in klachten:
+            row_id = k.get('id')
+            status = k.get('status', 'Nieuw')
+            
+            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | 📋 {k.get('klachtensoort', '-')} | Status: {status}"):
+                col_a, col_b = st.columns(2)
+                col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
+                col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
+                col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
+                
+                col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                if k.get('bijlage_url'):
+                    col_b.markdown(f"**📎 Bijlage:** [Bekijk bestand]({k['bijlage_url']})")
+                
+                st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
+                st.markdown("---")
+                
+                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
+                huidige_idx = status_opties.index(status) if status in status_opties else 0
+                
+                nieuwe_status = st.selectbox("Status bijwerken", status_opties, index=huidige_idx, key=f"status_{row_id}")
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
+                mail_bericht = st.text_area("Bericht naar de burger", key=f"msg_{row_id}")
 
-        # De knop moet 8 spaties ingesprongen zijn als hij in de loop en expander staat
-        if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
-            # Alles wat bij de knop hoort moet 12 spaties ingesprongen zijn
-            supabase.table("klachten").update({
-                "status": nieuwe_status,
-                "interne_notitie": notitie
-            }).eq("id", row_id).execute()
-            
-            st.success("Opgeslagen!")
-            st.rerun()
-            
-if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
-    # 1. Update de status in Supabase
-    supabase.table("klachten").update({
-        "status": nieuwe_status,
-        "interne_notitie": notitie
-    }).eq("id", row_id).execute()
-    
-    # 2. Stel de e-mail op
-    mail_inhoud = f"""
-    <p>Beste {k.get('volledige_naam')},</p>
-    <p>De status van uw klacht ({k.get('ticket_id')}) is gewijzigd naar: <b>{nieuwe_status}</b>.</p>
-    <p>{mail_bericht}</p>
-    <p>Met vriendelijke groet,<br>Klachtenunit Wanica</p>
-    """
-    
-    # 3. Verstuur de mail
-    if stuur_mail(k.get('email'), f"Update klacht {k.get('ticket_id')}", mail_inhoud):
-        st.success("✅ Opgeslagen en mail succesvol verzonden!")
-    
-    st.rerun()
-    
+                if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
+                    # 1. Update de status in Supabase
+                    supabase.table("klachten").update({
+                        "status": nieuwe_status,
+                        "interne_notitie": notitie
+                    }).eq("id", row_id).execute()
+                    
+                    # 2. Stel de e-mail op
+                    mail_inhoud = f"""
+                    <p>Beste {k.get('volledige_naam')},</p>
+                    <p>De status van uw klacht ({k.get('ticket_id')}) is gewijzigd naar: <b>{nieuwe_status}</b>.</p>
+                    <p>{mail_bericht}</p>
+                    <p>Met vriendelijke groet,<br>Klachtenunit Wanica</p>
+                    """
+                    
+                    # 3. Verstuur de mail
+                    if stuur_mail(k.get('email'), f"Update klacht {k.get('ticket_id')}", mail_inhoud):
+                        st.success("✅ Opgeslagen en mail succesvol verzonden!")
+                    
+                    st.rerun()
+
     elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
@@ -169,9 +173,9 @@ if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
         
-        # --- Nieuwe medewerker toevoegen ---
         with st.expander("➕ Nieuwe medewerker toevoegen"):
-            with st.form("add_user_form", clear_on_submit=True):
+            # Unieke key voor dit formulier
+            with st.form("add_new_employee_form", clear_on_submit=True):
                 u = st.text_input("Gebruikersnaam")
                 p = st.text_input("Wachtwoord", type="password")
                 r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
