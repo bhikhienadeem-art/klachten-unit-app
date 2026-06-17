@@ -23,8 +23,7 @@ def stuur_mail(ontvanger, onderwerp, html_inhoud, bestand=None):
         msg['Bcc'] = "klachtenunitwanicacentrum@gmail.com" 
         msg.add_alternative(html_inhoud, subtype='html')
         
-        # Logica voor bijlage toevoegen
-        if bestand:
+        if bestand is not None:
             msg.add_attachment(
                 bestand.getvalue(),
                 maintype='application',
@@ -46,17 +45,7 @@ st.markdown("""
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
     .stApp, [data-testid="stSidebar"] { background-color: #90D5FF; }
     .header-bar { background-color: #003366; color: white; padding: 40px; text-align: center; border: 5px solid #ffcc00; border-radius: 15px; margin-bottom: 30px; }
-    .header-bar h1 { font-size: 3em; margin-bottom: 10px; }
     </style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <div class="header-bar">
-        <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div style="font-size: 1.2em;">
-            📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
-        </div>
-    </div>
 """, unsafe_allow_html=True)
 
 # --- SESSIE & AUTH ---
@@ -64,7 +53,6 @@ if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "menu" not in st.session_state: st.session_state.menu = "Dashboard"
 
 with st.sidebar:
-    st.markdown("## Medewerkers Login")
     if not st.session_state.logged_in:
         user = st.text_input("Gebruikersnaam")
         pw = st.text_input("Wachtwoord", type="password")
@@ -73,100 +61,63 @@ with st.sidebar:
             if check:
                 st.session_state.logged_in = True
                 st.rerun()
-            else: st.error("Ongeldige gegevens")
     else:
-        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten", "Instellingen"])
+        st.session_state.menu = st.radio("Navigatie", ["Dashboard", "Rapporten"])
         if st.button("Uitloggen"):
             st.session_state.logged_in = False
             st.rerun()
-    st.markdown("---")
-    try: st.image("orgineel logo Centrum.png", width=250)
-    except: st.warning("Logo bestand niet gevonden")
 
 # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
-    # Haal data op
     klachten = supabase.table("klachten").select("*").execute().data
     df_dash = pd.DataFrame(klachten)
 
     if st.session_state.menu == "Dashboard":
-        st.title("📊 Dashboard - Klachtenbeheer")
-        if not df_dash.empty:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Totaal Klachten", len(df_dash))
-            c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
-            c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
-            st.markdown("---")
-        
+        st.title("📊 Dashboard")
         for k in klachten:
             row_id = k.get('id')
-            status = k.get('status', 'Nieuw')
-            
-            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {status}"):
-                st.subheader("📋 Gegevens van de burger")
-                col_a, col_b = st.columns(2)
-                col_a.write(f"**ID Nummer:** {k.get('id_nummer', '-')}")
-                col_a.write(f"**Telefoon:** {k.get('telefoon_whatsapp', '-')}")
-                col_b.write(f"**E-mail:** {k.get('email', '-')}")
-                col_b.write(f"**Adres:** {k.get('adres', '-')}")
-                st.write(f"**Soort klacht:** {k.get('klachtensoort', '-')}")
-                st.write(f"**Omschrijving:** {k.get('omschrijving', '-')}")
-                st.markdown("---")
+            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
+                st.write(f"**E-mail:** {k.get('email')} | **Tel:** {k.get('telefoon_whatsapp')}")
+                st.write(f"**Omschrijving:** {k.get('omschrijving')}")
                 
-                status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
-                nieuwe_status = st.selectbox("Status", status_opties, index=status_opties.index(status) if status in status_opties else 0, key=f"status_{row_id}")
-                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
-                mail_bericht = st.text_area("Bericht naar de burger", key=f"msg_{row_id}")
-
-                col_btn1, col_btn2 = st.columns(2)
-                if col_btn1.button("💾 Opslaan", key=f"save_{row_id}"):
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], key=f"status_{row_id}")
+                notitie = st.text_area("Notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
+                
+                c1, c2 = st.columns(2)
+                if c1.button("💾 Opslaan", key=f"save_{row_id}"):
                     supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
-                    mail_inhoud = f"<p>Update over uw klacht ({k.get('ticket_id')}):</p><p>{mail_bericht}</p>"
-                    stuur_mail(k.get('email'), "Update klacht", mail_inhoud)
-                    st.success("✅ Opgeslagen!")
                     st.rerun()
-                
-                if col_btn2.button("🗑️ Verwijderen", key=f"del_{row_id}"):
+                if c2.button("🗑️ Verwijderen", key=f"del_{row_id}"):
                     supabase.table("klachten").delete().eq("id", row_id).execute()
-                    st.warning("Klacht verwijderd.")
                     st.rerun()
 
     elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten & Analyse")
+        st.title("📈 Rapporten")
         if not df_dash.empty:
             df_plot = df_dash['klachtensoort'].value_counts().reset_index()
             df_plot.columns = ['Soort', 'Aantal']
-            
             c1, c2 = st.columns(2)
-            fig_bar = px.bar(df_plot, x='Soort', y='Aantal', color='Soort', title="Staafdiagram")
-            c1.plotly_chart(fig_bar, use_container_width=True)
-            
-            fig_pie = px.pie(df_plot, values='Aantal', names='Soort', title="Cirkeldiagram")
-            c2.plotly_chart(fig_pie, use_container_width=True)
-            
-            st.dataframe(df_dash)
-        else:
-            st.info("Nog geen data om te tonen.")
+            c1.plotly_chart(px.bar(df_plot, x='Soort', y='Aantal', color='Soort'), use_container_width=True)
+            c2.plotly_chart(px.pie(df_plot, values='Aantal', names='Soort'), use_container_width=True)
 
 else:
-    # Dit is het formulier voor de burger
     st.title("📝 Klacht Indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        naam = col1.text_input("Naam")
-        id_nr = col1.text_input("ID Nummer")
-        telefoon = col1.text_input("Telefoon")
-        woonadres = col1.text_input("Woonadres")
-        email = col2.text_input("E-mail")
-        soort = col2.selectbox("Soort", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        omschrijving = st.text_area("Omschrijving")
-        file = st.file_uploader("Bijlage")
+        naam = col1.text_input("👤 Naam")
+        id_nr = col1.text_input("🆔 ID Nummer")
+        telefoon = col1.text_input("📞 Telefoon")
+        woonadres = col1.text_input("🏠 Woonadres")
+        email = col2.text_input("📧 E-mail")
+        soort = col2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        omschrijving = st.text_area("✍️ Omschrijving")
+        file = st.file_uploader("📎 Bijlage")
         
-        if st.form_submit_button("Verstuur Klacht"):
+        if st.form_submit_button("🚀 Verstuur Klacht"):
             t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
             supabase.table("klachten").insert({
-                "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon, 
-                "adres": woonadres, "email": email, "omschrijving": omschrijving, 
+                "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
+                "adres": woonadres, "email": email, "omschrijving": omschrijving,
                 "status": "Nieuw", "ticket_id": t_id, "klachtensoort": soort
             }).execute()
             stuur_mail(email, "Bevestiging", "Bedankt voor uw melding.")
