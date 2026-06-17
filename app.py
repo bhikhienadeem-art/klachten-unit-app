@@ -132,6 +132,7 @@ if st.session_state.logged_in:
                     if stuur_mail(k.get('email'), "Update klacht", mail_inhoud):
                         st.success("✅ Opgeslagen en gemaild!")
                         st.rerun()
+
 elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         
