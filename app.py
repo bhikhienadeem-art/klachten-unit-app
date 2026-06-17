@@ -211,3 +211,24 @@ else:
             """
             stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {t_id}", medewerker_mail, bestand=file)
             st.success(f"✅ Uw klacht is verzonden! Referentienummer: {t_id}")
+            # --- FOOTER ---
+st.markdown("""
+    <style>
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #003366;
+        color: white;
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        border-top: 2px solid #ffcc00;
+    }
+    </style>
+    <div class="footer">
+        © 2026 Districstcommissariaat Wanica Centrum | Afdeling ICT
+    </div>
+""", unsafe_allow_html=True)
+            
