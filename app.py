@@ -37,7 +37,7 @@ st.markdown("""
     <style>
     /* Achtergrondkleur voor de gehele app en sidebar */
     .stApp, [data-testid="stSidebar"] { 
-        background-color: #90D5FF; 
+        background-color: #ADEBB3; 
     }
     /* Grotere Header styling */
     .header-bar { 
