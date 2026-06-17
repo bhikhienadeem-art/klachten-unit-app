@@ -58,6 +58,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
 st.markdown("""<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1>📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
 
 # --- SIDEBAR & AUTH ---
@@ -76,7 +77,6 @@ with st.sidebar:
         if st.button("🚪 Uitloggen"): st.session_state.logged_in = False; st.rerun()
     st.markdown("---")
     try: 
-        # Groter logo hier:
         st.image("orgineel logo Centrum.png", width=300)
     except: 
         st.warning("Logo bestand niet gevonden")
@@ -151,6 +151,40 @@ else:
         if st.form_submit_button("🚀 Verstuur Klacht"):
             t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
             supabase.table("klachten").insert({"volledige_naam": naam, "email": email, "id_nummer": id_nr, "telefoon_whatsapp": telefoon, "adres": adres, "omschrijving": omschrijving, "klachtensoort": soort, "status": "Nieuw", "ticket_id": t_id}).execute()
-            stuur_mail(email, "Bevestiging", "Bedankt voor uw melding.")
-            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {t_id}", "Er is een nieuwe melding.", bestand=file)
+            
+            # Bevestigingsmail voor burger
+            bevestiging_mail = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #003366;">Bedankt voor uw melding</h2>
+                    <p>Beste {naam},</p>
+                    <p>Wij hebben uw klacht in goede orde ontvangen. Hartelijk dank voor uw betrokkenheid.</p>
+                    <p>Uw klacht is geregistreerd onder referentienummer: <strong>{t_id}</strong>.</p>
+                    <p>Wij streven ernaar om u zo spoedig mogelijk te informeren over de voortgang.</p>
+                    <br><p>Met vriendelijke groet,<br><strong>Klachtenunit Wanica Centrum</strong></p>
+                </body>
+            </html>
+            """
+            stuur_mail(email, "Bevestiging van uw klacht", bevestiging_mail)
+            
+            # Gedetailleerde mail voor medewerker
+            medewerker_mail = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <h2 style="color: #003366;">Nieuwe klacht: {t_id}</h2>
+                    <p>Er is een nieuwe melding binnengekomen:</p>
+                    <ul>
+                        <li><b>Naam:</b> {naam}</li>
+                        <li><b>E-mail:</b> {email}</li>
+                        <li><b>ID:</b> {id_nr}</li>
+                        <li><b>Tel:</b> {telefoon}</li>
+                        <li><b>Adres:</b> {adres}</li>
+                        <li><b>Soort:</b> {soort}</li>
+                        <li><b>Omschrijving:</b> {omschrijving}</li>
+                    </ul>
+                    <p>Zie bijlage voor eventuele documentatie.</p>
+                </body>
+            </html>
+            """
+            stuur_mail("klachtenunitwanicacentrum@gmail.com", f"Nieuwe Klacht: {t_id}", medewerker_mail, bestand=file)
             st.success("✅ Uw klacht is verzonden!")
