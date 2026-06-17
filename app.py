@@ -66,16 +66,33 @@ if st.session_state.logged_in:
         st.title("📊 Dashboard")
         for k in klachten:
             row_id = k.get('id')
-            with st.expander(f"👤 {k.get('volledige_naam')} | Status: {k.get('status')}"):
-                st.write(f"**E-mail:** {k.get('email')} | **Tel:** {k.get('telefoon_whatsapp')}")
-                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], key=f"s_{row_id}")
-                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"n_{row_id}")
-                bericht = st.text_area("Bericht naar burger", key=f"b_{row_id}")
+            # Hier voegen we de extra velden toe aan de expander
+            with st.expander(f"👤 {k.get('volledige_naam', 'Anoniem')} | Status: {k.get('status', 'Nieuw')}"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.write(f"**🆔 ID Nummer:** {k.get('id_nummer', 'N/A')}")
+                    st.write(f"**📞 Telefoon:** {k.get('telefoon_whatsapp', 'N/A')}")
+                    st.write(f"**🏠 Adres:** {k.get('adres', 'N/A')}")
+                with col_b:
+                    st.write(f"**📧 E-mail:** {k.get('email', 'N/A')}")
+                    st.write(f"**📂 Soort:** {k.get('klachtensoort', 'N/A')}")
+                
+                st.write(f"**✍️ Omschrijving:** {k.get('omschrijving', 'N/A')}")
+                
+                # De beheer-velden
+                nieuwe_status = st.selectbox("Status", ["Nieuw", "In behandeling", "Afgehandeld"], key=f"status_{row_id}")
+                notitie = st.text_area("Interne notitie", value=k.get('interne_notitie', ''), key=f"note_{row_id}")
+                bericht = st.text_area("Bericht naar burger", key=f"msg_{row_id}")
                 
                 c1, c2 = st.columns(2)
                 if c1.button("💾 Opslaan & Mailen", key=f"save_{row_id}"):
-                    supabase.table("klachten").update({"status": nieuwe_status, "interne_notitie": notitie}).eq("id", row_id).execute()
-                    if bericht: stuur_mail(k.get('email'), "Update uw klacht", f"<p>{bericht}</p>")
+                    supabase.table("klachten").update({
+                        "status": nieuwe_status, 
+                        "interne_notitie": notitie
+                    }).eq("id", row_id).execute()
+                    
+                    if bericht:
+                        stuur_mail(k.get('email'), "Update over uw klacht", f"<p>{bericht}</p>")
                     st.success("Opgeslagen!")
                     st.rerun()
                 if c2.button("🗑️ Verwijderen", key=f"del_{row_id}"):
