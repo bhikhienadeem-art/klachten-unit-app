@@ -137,8 +137,8 @@ for k in klachten:
             
             st.success("Opgeslagen!")
             st.rerun()
-                
-    if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
+            
+if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
     # 1. Update de status in Supabase
     supabase.table("klachten").update({
         "status": nieuwe_status,
