@@ -200,20 +200,27 @@ if st.session_state.logged_in:
 
 
 else:
-    # --- INDIENEN KLACHT ---
+   # --- INDIENEN KLACHT ---
+    st.subheader("📝 Klacht indienen")
     with st.form("klacht_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        naam = col1.text_input("Naam")
-        id_nr = col1.text_input("ID Nummer")
-        telefoon = col1.text_input("Telefoon")
-        woonadres = col1.text_input("Woonadres")
-        email = col2.text_input("E-mail")
-        soort = col2.selectbox("Soort", ["Afval", "Wegen", "Wateroverlast", "Anders"])
-        omschrijving = st.text_area("Omschrijving")
-        file = st.file_uploader("Bijlage")
         
-        if st.form_submit_button("Verstuur Klacht"):
+        # Invoervelden met icoontjes
+        naam = col1.text_input("👤 Naam")
+        id_nr = col1.text_input("🆔 ID Nummer")
+        telefoon = col1.text_input("📞 Telefoon")
+        woonadres = col1.text_input("🏠 Woonadres")
+        
+        email = col2.text_input("📧 E-mail")
+        soort = col2.selectbox("📂 Soort klacht", ["Afval", "Wegen", "Wateroverlast", "Anders"])
+        
+        omschrijving = st.text_area("📝 Omschrijving")
+        file = st.file_uploader("📎 Bijlage (max 200MB)")
+        
+        if st.form_submit_button("Verstuur Klacht 🚀"):
             t_id = f"WAN-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+            
+            # Database insert
             supabase.table("klachten").insert({
                 "volledige_naam": naam, "id_nummer": id_nr, "telefoon_whatsapp": telefoon,
                 "adres": woonadres, "email": email, "omschrijving": omschrijving,
