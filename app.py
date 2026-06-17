@@ -163,7 +163,7 @@ elif st.session_state.menu == "Rapporten":
 elif st.session_state.menu == "Instellingen":
     st.title("⚙️ Instellingen")
     # Jouw instellingen logica
-    elif st.session_state.menu == "Rapporten":
+    elif st.session_state.menu = "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
             st.download_button("📥 Download CSV", data=df_dash.to_csv(index=False), file_name='klachten.csv')
