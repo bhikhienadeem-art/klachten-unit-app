@@ -39,24 +39,28 @@ st.markdown("""
     .stApp, [data-testid="stSidebar"] { 
         background-color: #90D5FF; 
     }
-    /* Header styling met donkerblauw contrast */
+    /* Grotere Header styling */
     .header-bar { 
         background-color: #003366; 
         color: white; 
-        padding: 25px; 
+        padding: 40px; /* Meer ruimte gemaakt (was 25px) */
         text-align: center; 
         border: 5px solid #ffcc00; 
-        border-radius: 10px; 
+        border-radius: 15px; 
         margin-bottom: 30px; 
+    }
+    .header-bar h1 {
+        font-size: 3em; /* Tekst groter gemaakt */
+        margin-bottom: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Logo is nu weg uit de header, we gebruiken alleen de tekst-kolom
+# De header container blijft hetzelfde, de CSS hierboven regelt nu de grotere weergave:
 st.markdown("""
     <div class="header-bar">
         <h1>Klachtenunit Commissariaat Wanica Centrum</h1>
-        <div style="font-size: 0.9em;">
+        <div style="font-size: 1.2em;">
             📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com
         </div>
     </div>
