@@ -64,7 +64,8 @@ st.markdown("""
 col1, col2 = st.columns([1, 4]) 
 
 with col1:
-    # GEBRUIK DE EXACTE NAAM UIT JE REPOSITORY
+    # Zorg dat de bestandsnaam exact overeenkomt met je GitHub repository
+    # Als je wapen.png wilt proberen, vervang de naam hieronder
     st.image("logo_bestand.png", use_container_width=True) 
 
 with col2:
