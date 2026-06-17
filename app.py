@@ -96,12 +96,24 @@ with st.sidebar:
         st.image("orgineel logo Centrum.png", width=250)
     except: 
         st.warning("Logo bestand niet gevonden")
-        # --- PAGINA LOGICA ---
+       # --- PAGINA LOGICA ---
 if st.session_state.logged_in:
+    # Data ophalen voor alle pagina's
     klachten = supabase.table("klachten").select("*").execute().data
-    df_dash = pd.DataFrame(klachten)
+    df_dash = pd.DataFrame(klachten) if klachten else pd.DataFrame()
 
-    # --- KLACHTEN LIJST (MET INTERNE NOTITIE) ---
+    if st.session_state.menu == "Dashboard":
+        st.title("📊 Dashboard - Klachtenbeheer")
+        
+        # --- METRIC CARDS ---
+        if not df_dash.empty:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Totaal Klachten", len(df_dash))
+            c2.metric("Nieuw", len(df_dash[df_dash['status'] == 'Nieuw']))
+            c3.metric("Afgehandeld", len(df_dash[df_dash['status'] == 'Afgehandeld']))
+            st.markdown("---")
+        
+        # --- KLACHTEN LIJST ---
         if klachten:
             for k in klachten:
                 row_id = k.get('id')
@@ -112,16 +124,14 @@ if st.session_state.logged_in:
                     col_a.write(f"**🆔 ID:** {k.get('id_nummer', '-')}")
                     col_a.write(f"**🏠 Adres:** {k.get('adres', '-')}")
                     col_a.write(f"**📞 Tel/WA:** {k.get('telefoon_whatsapp', '-')}")
-                    
                     col_b.write(f"**📧 E-mail:** {k.get('email', '-')}")
+                    
                     if k.get('bijlage_url'):
                         col_b.markdown(f"**📎 Bijlage:** [Bekijk bestand]({k['bijlage_url']})")
                     
                     st.write(f"**📝 Omschrijving:** {k.get('omschrijving', '-')}")
-                    
                     st.markdown("---")
                     
-                    # Status en Notitie bijwerken
                     status_opties = ["Nieuw", "In behandeling", "Afgehandeld"]
                     huidige_idx = status_opties.index(status) if status in status_opties else 0
                     
@@ -130,12 +140,10 @@ if st.session_state.logged_in:
                     
                     if st.button("💾 Status & Notitie Opslaan", key=f"save_{row_id}"):
                         try:
-                            # Nu de kolom bestaat, zal deze update correct werken
                             supabase.table("klachten").update({
                                 "status": nieuwe_status, 
                                 "interne_notitie": notitie
                             }).eq("id", row_id).execute()
-                            
                             st.success("✅ Opgeslagen!")
                             st.rerun()
                         except Exception as e:
@@ -143,63 +151,46 @@ if st.session_state.logged_in:
         else:
             st.info("Geen klachten gevonden in het systeem.")
 
-    # Nu pas de elif voor de andere menu-onderdelen
     elif st.session_state.menu == "Rapporten":
-        st.title("📈 Rapporten")
-        # Hier komt je rapporten logica
-        
-    elif st.session_state.menu == "Instellingen":
-        st.title("⚙️ Instellingen")
-        # Hier komt je instellingen logica    elif st.session_state.menu == "Rapporten":
         st.title("📈 Rapporten & Analyse")
         if not df_dash.empty:
             st.download_button("📥 Download CSV", data=df_dash.to_csv(index=False), file_name='klachten.csv')
+            # Zorg dat plotly express (px) geïmporteerd is
             st.plotly_chart(px.pie(df_dash, names='klachtensoort'))
             st.dataframe(df_dash)
+        else:
+            st.info("Geen data beschikbaar voor rapportages.")
 
     elif st.session_state.menu == "Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
         
-        # --- Nieuwe medewerker toevoegen ---
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form", clear_on_submit=True):
                 u = st.text_input("Gebruikersnaam")
                 p = st.text_input("Wachtwoord", type="password")
                 r = st.selectbox("Rol", ["Admin", "Medewerker", "Viewer"])
-                
                 if st.form_submit_button("Opslaan"):
                     if u and p:
-                        supabase.table("medewerkers").insert({
-                            "gebruikersnaam": u, 
-                            "wachtwoord": p, 
-                            "rol": r
-                        }).execute()
-                        st.success(f"✅ Medewerker {u} is toegevoegd!")
+                        supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
+                        st.success(f"✅ Medewerker {u} toegevoegd!")
                         st.rerun()
                     else:
-                        st.error("⚠️ Vul zowel een gebruikersnaam als wachtwoord in.")
+                        st.error("⚠️ Vul alle velden in.")
         
         st.markdown("---")
-        
-        # --- Huidige medewerkers beheer ---
         st.subheader("👥 Huidige medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
-        
         if medewerkers:
             df_users = pd.DataFrame(medewerkers)
-            # Toon alleen relevante kolommen
             st.table(df_users[['gebruikersnaam', 'rol']])
             
-            st.markdown("---")
             st.warning("⚠️ Gebruikers verwijderen")
             te_verwijderen = st.selectbox("Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
-            
             if st.button("🗑️ Verwijder deze medewerker", type="primary"):
                 supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
                 st.rerun()
         else:
             st.info("Geen medewerkers gevonden.")
-
 
 else:
    # --- INDIENEN KLACHT ---
