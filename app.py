@@ -64,23 +64,26 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER MET LOGO'S EN TEKST ---
+# --- HEADER MET LOGO LINKS EN WAPEN RECHTS ---
+# Kolom 1 (logo), Kolom 2 (tekst), Kolom 3 (wapen)
 col1, col2, col3 = st.columns([1, 5, 1])
 
 with col1:
-    # Zorg dat de naam in je repo exact 'orgineel logo Centrum.png' is
+    # Jouw logo
     st.image("orgineel logo Centrum.png", use_container_width=True)
 
 with col2:
+    # Tekst in het midden
     st.markdown("""
-        <div class="header-bar">
-            <h1 style="margin: 0; font-size: 24px; color: white;">Klachtenunit Commissariaat Wanica Centrum</h1>
-            <p class="header-text" style="margin: 5px 0 0 0;">Kontact informa:t 088-733-17000 | E-mail: lmcunifo@klwanica.gc.su</p>
+        <div style="background-color: #003366; color: white; padding: 15px; 
+                    text-align: center; border: 3px solid #ffcc00; border-radius: 10px;">
+            <h1 style="margin: 0; font-size: 22px;">Klachtenunit Commissariaat Wanica Centrum</h1>
+            <p style="margin: 5px 0 0 0;">📍 Tawajarieweg 20 | 📞 (+597) 366660/366929 | 💬 (+597) 8921062</p>
         </div>
     """, unsafe_allow_html=True)
 
 with col3:
-    # Zorg dat de naam in je repo exact 'pngegg (1).png' is
+    # Jouw wapen (met de specifieke bestandsnaam)
     st.image("pngegg (1).png", use_container_width=True)
 st.markdown("""<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1>📍 Tawajarieweg 20 (Lelydorp) | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
 
