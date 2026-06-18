@@ -49,17 +49,28 @@ st.markdown("""
     .header-bar { 
         background-color: #003366; 
         color: white; 
-        padding: 15px; 
+        padding: 20px; 
         border: 3px solid #ffcc00; 
         border-radius: 10px; 
         text-align: center;
     }
     
+    /* Tekst groter maken */
+    .header-bar h1 { 
+        font-size: 32px !important; 
+        color: white !important; 
+    }
+    
+    .header-bar p { 
+        font-size: 18px !important; 
+        color: white !important; 
+    }
+    
     /* Mobiele optimalisatie */
     @media (max-width: 600px) {
-        .header-bar { padding: 8px; }
-        .header-bar h1 { font-size: 16px !important; }
-        .header-text { font-size: 10px !important; }
+        .header-bar { padding: 10px; }
+        .header-bar h1 { font-size: 20px !important; }
+        .header-bar p { font-size: 12px !important; }
     }
     </style>
 """, unsafe_allow_html=True)
