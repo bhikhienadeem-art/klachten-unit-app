@@ -75,7 +75,12 @@ with col2:
         <div style="background-color: #003366; color: white; padding: 15px; 
                     text-align: center; border: 3px solid #ffcc00; border-radius: 10px;">
             <h1 style="margin: 0; font-size: 22px;">Klachtenunit Commissariaat Wanica Centrum</h1>
-            <p style="margin: 5px 0 0 0;">Tawajarieweg 20 | Tel: 366660/366929 | WhatsApp: 8921062 | Email: lmcunifo@klwanica.gc.su</p>
+            <p style="margin: 5px 0 0 0;">
+                📍 Tawajarieweg 20 Lelydorp | 
+                📞 +597-366660/+597-366929 | 
+                💬 +597-8921062 | 
+                ✉️ klachtenunitwanicacentrum@gmail.com
+            </p>
         </div>
     """, unsafe_allow_html=True)
 
