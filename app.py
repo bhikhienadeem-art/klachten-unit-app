@@ -64,16 +64,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER MET LOGO LINKS EN WAPEN RECHTS ---
-# Kolom 1 (logo), Kolom 2 (tekst), Kolom 3 (wapen)
+# --- HEADER (Enige header in je code) ---
 col1, col2, col3 = st.columns([1, 5, 1])
 
 with col1:
-    # Jouw logo
     st.image("orgineel logo Centrum.png", use_container_width=True)
 
 with col2:
-    # Tekst in het midden
     st.markdown("""
         <div style="background-color: #003366; color: white; padding: 15px; 
                     text-align: center; border: 3px solid #ffcc00; border-radius: 10px;">
@@ -83,9 +80,7 @@ with col2:
     """, unsafe_allow_html=True)
 
 with col3:
-    # Jouw wapen (met de specifieke bestandsnaam)
-    st.image("pngegg (1).png", use_container_width=True)
-st.markdown("""<div class="header-bar"><h1>Klachtenunit Commissariaat Wanica Centrum</h1>📍 Tawajarieweg 20 (Lelydorp) | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
+    st.image("pngegg (1).png", use_container_width=True)weg 20 (Lelydorp) | 📞 (+597) 366660/366929 | 💬 WhatsApp: (+597) 8921062 | ✉️ klachtenunitwanicacentrum@gmail.com</div>""", unsafe_allow_html=True)
 
 # --- SIDEBAR & AUTH ---
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
