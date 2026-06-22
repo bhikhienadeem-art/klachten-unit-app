@@ -152,8 +152,10 @@ if st.session_state.logged_in:
             c2.plotly_chart(px.pie(df_dash, names='klachtensoort'), use_container_width=True)
             st.dataframe(df_dash, use_container_width=True)
 
-    elif st.session_state.menu == "⚙️ Instellingen":
+   elif st.session_state.menu == "⚙️ Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
+        
+        # Nieuwe medewerker toevoegen
         with st.expander("➕ Nieuwe medewerker toevoegen"):
             with st.form("add_user_form", clear_on_submit=True):
                 u = st.text_input("👤 Gebruikersnaam")
@@ -161,15 +163,36 @@ if st.session_state.logged_in:
                 r = st.selectbox("🎭 Rol", ["Admin", "Medewerker", "Viewer"])
                 if st.form_submit_button("💾 Opslaan"):
                     supabase.table("medewerkers").insert({"gebruikersnaam": u, "wachtwoord": p, "rol": r}).execute()
-                    st.success("✅ Toegevoegd!"); st.rerun()
+                    st.success("✅ Toegevoegd!")
+                    st.rerun()
         
+        # Huidige medewerkers overzicht
         st.subheader("👥 Huidige medewerkers")
         medewerkers = supabase.table("medewerkers").select("*").execute().data
         if medewerkers:
             st.table(pd.DataFrame(medewerkers)[['gebruikersnaam', 'rol']])
+            
+            # Verwijder functie
             te_verwijderen = st.selectbox("🗑️ Selecteer gebruiker om te verwijderen", options=[m['gebruikersnaam'] for m in medewerkers])
             if st.button("❌ Verwijder deze medewerker"):
-                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute(); st.rerun()
+                supabase.table("medewerkers").delete().eq("gebruikersnaam", te_verwijderen).execute()
+                st.rerun()
+
+        # Wachtwoord wijzigen sectie
+        st.markdown("---")
+        st.subheader("🔑 Wachtwoord wijzigen")
+        with st.form("change_password_form"):
+            user_to_change = st.selectbox("Selecteer medewerker om wachtwoord te wijzigen", options=[m['gebruikersnaam'] for m in medewerkers])
+            new_pw = st.text_input("Nieuw wachtwoord", type="password")
+            confirm_pw = st.text_input("Bevestig nieuw wachtwoord", type="password")
+            
+            if st.form_submit_button("Opslaan nieuw wachtwoord"):
+                if new_pw == confirm_pw:
+                    supabase.table("medewerkers").update({"wachtwoord": new_pw}).eq("gebruikersnaam", user_to_change).execute()
+                    st.success(f"✅ Wachtwoord voor {user_to_change} is succesvol gewijzigd!")
+                    st.rerun()
+                else:
+                    st.error("❌ De wachtwoorden komen niet overeen.")
 else:
     with st.form("klacht_form", clear_on_submit=True):
         st.subheader("📝 Klacht Indienen")
