@@ -152,7 +152,7 @@ if st.session_state.logged_in:
             c2.plotly_chart(px.pie(df_dash, names='klachtensoort'), use_container_width=True)
             st.dataframe(df_dash, use_container_width=True)
 
-     elif st.session_state.menu == "⚙️ Instellingen":
+elif st.session_state.menu == "⚙️ Instellingen":
         st.title("⚙️ Instellingen - Gebruikersbeheer")
         
         # Nieuwe medewerker toevoegen
